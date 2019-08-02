@@ -1,0 +1,32 @@
+{
+  "builders": [
+    {
+      "type": "googlecompute",
+      "account_file": "../terraform/account.json",
+      "source_image": "ubuntu-1804-bionic-v20190722a",
+      "ssh_username": "ubuntu",
+      "project_id": "hashiconf19",
+      "zone": "us-west1-b"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": ["sudo mkdir /ops", "sudo chmod 777 /ops"]
+    },
+    {
+      "type": "file",
+      "source": "./scripts",
+      "destination": "/ops/scripts"
+    },
+    {
+      "type": "file",
+      "source": "./config",
+      "destination": "/ops/config"
+    },
+    {
+      "type": "shell",
+      "script": "./scripts/setup.sh"
+    }
+  ]
+}
