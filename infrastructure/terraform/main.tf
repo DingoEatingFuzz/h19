@@ -9,6 +9,7 @@ module "hashistack" {
   source = "./hashistack"
 
   name = "art-plotter"
+  region = "us-west1"
   zone = "us-west1-b"
   server_machine_type = "n1-standard-1"
   client_machine_type = "g1-small"
@@ -23,9 +24,6 @@ module "hashistack" {
 
 output "IP_Addresses" {
   value = <<CONFIGURATION
-Client public IPs: ${join(", ", module.hashistack.client_public_ips)}
-Server public IPs: ${join(", ", module.hashistack.server_public_ips)}
-
 To connect, add your private key and SSH into any client or server with
 `ssh ubuntu@PUBLIC_IP`. You can test the integrity of the cluster by running:
 
@@ -42,11 +40,11 @@ executing:
 
 Simply wait a few seconds and rerun the command if this occurs.
 
-The Nomad UI can be accessed at http://${module.hashistack.server_public_ips[0]}:4646/ui.
-The Consul UI can be accessed at http://${module.hashistack.server_public_ips[0]}:8500/ui.
+The Nomad UI can be accessed at http://${module.hashistack.server_lb_ip}:4646/ui.
+The Consul UI can be accessed at http://${module.hashistack.server_lb_ip}:8500/ui.
 
 Set the following for access from the Nomad CLI:
 
-  export NOMAD_ADDR=http://${module.hashistack.server_public_ips[0]}:4646
+  export NOMAD_ADDR=http://${module.hashistack.server_lb_ip}:4646
 CONFIGURATION
 }

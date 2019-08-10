@@ -1,4 +1,5 @@
 variable "name" {}
+variable "region" {}
 variable "zone" {}
 variable "image" {}
 variable "server_machine_type" {}
@@ -9,6 +10,9 @@ variable "nomad_binary" {}
 variable "root_block_device_size" {}
 variable "client_block_size" {}
 variable "whitelist_ip" {}
+variable "service_port" {
+  default = 80
+}
 
 variable "retry_join" {
   type = "map"
@@ -63,22 +67,27 @@ data "template_file" "user_data_server" {
   }
 }
 
-resource "google_compute_instance" "server" {
-  name         = "${var.name}-server-${count.index}"
+resource "google_compute_instance_template" "server_template" {
+  name = "${var.name}-server-template"
+  tags = [ "allow-ssh", "server-template", "${lookup(var.retry_join, "tag_value")}" ]
+
+  labels = {
+    environment = "prod"
+  }
+
+  instance_description = "Server node"
   machine_type = "${var.server_machine_type}"
-  count        = "${var.server_count}"
+  can_ip_forward = false
 
-  metadata_startup_script = "${data.template_file.user_data_server.rendered}"
-  allow_stopping_for_update = true
+  scheduling  {
+    automatic_restart = true
+    on_host_maintenance = "MIGRATE"
+  }
 
-  tags = [ "${var.name}-server-${count.index}", "${lookup(var.retry_join, "tag_value")}" ]
-
-  boot_disk {
-    initialize_params {
-      image = "${var.image}"
-      size = "${var.root_block_device_size}"
-      type = "pd-ssd"
-    }
+  disk {
+    source_image = "${var.image}"
+    auto_delete = true
+    boot = true
   }
 
   network_interface {
@@ -86,10 +95,94 @@ resource "google_compute_instance" "server" {
     access_config {}
   }
 
+  metadata_startup_script = "${data.template_file.user_data_server.rendered}"
+
   service_account {
     scopes = ["compute-rw"]
   }
 }
+
+resource "google_compute_instance_group_manager" "server_group" {
+  name = "${var.name}-server-igm"
+
+  base_instance_name = "${var.name}"
+  instance_template = "${google_compute_instance_template.server_template.self_link}"
+  update_strategy = "NONE"
+  zone = "${var.zone}"
+
+  target_size = "${var.server_count}"
+  target_pools = [google_compute_target_pool.default.self_link]
+
+  named_port {
+    name = "http"
+    port = "${var.service_port}"
+  }
+}
+
+resource "google_compute_forwarding_rule" "default" {
+  name                  = "${var.name}-lb"
+  target                = google_compute_target_pool.default.self_link
+  load_balancing_scheme = "EXTERNAL"
+  port_range            = "80-21255"
+  region                = var.region
+}
+
+resource "google_compute_target_pool" "default" {
+  name             = "${var.name}-lb"
+  region           = var.region
+  session_affinity = "NONE"
+
+  health_checks = [
+    google_compute_http_health_check.default.name,
+  ]
+}
+
+resource "google_compute_http_health_check" "default" {
+  name         = "${var.name}-lb-hc"
+  request_path = "/"
+  port         = 4646
+}
+
+resource "google_compute_firewall" "default-lb-fw" {
+  name    = "${var.name}-lb-vm-service"
+  network = google_compute_network.default.name
+
+  allow {
+    protocol = "tcp"
+    ports    = ["80-21255"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  source_tags   = ["server-template"]
+}
+
+# resource "google_compute_instance" "server" {
+#   name         = "${var.name}-server-${count.index}"
+#   machine_type = "${var.server_machine_type}"
+#   count        = "${var.server_count}"
+
+#   metadata_startup_script = "${data.template_file.user_data_server.rendered}"
+#   allow_stopping_for_update = true
+
+#   tags = [ "${var.name}-server-${count.index}", "${lookup(var.retry_join, "tag_value")}" ]
+
+#   boot_disk {
+#     initialize_params {
+#       image = "${var.image}"
+#       size = "${var.root_block_device_size}"
+#       type = "pd-ssd"
+#     }
+#   }
+
+#   network_interface {
+#     network = "${google_compute_network.default.name}"
+#     access_config {}
+#   }
+
+#   service_account {
+#     scopes = ["compute-rw"]
+#   }
+# }
 
 //
 // Client nodes
@@ -114,7 +207,7 @@ resource "google_compute_instance" "client" {
 
   tags = [ "${var.name}-client-${count.index}", "${lookup(var.retry_join, "tag_value")}" ]
 
-  depends_on             = ["google_compute_instance.server"]
+  depends_on             = ["google_compute_instance_group_manager.server_group"]
 
   boot_disk {
     initialize_params {
@@ -133,34 +226,14 @@ resource "google_compute_instance" "client" {
   }
 }
 
-// resource "aws_elb" "server_lb" {
-//   name               = "${var.name}-server-lb"
-//   availability_zones = ["${distinct(aws_instance.server.*.availability_zone)}"]
-//   internal           = false
-//   instances = ["${aws_instance.server.*.id}"]
-//   listener {
-//     instance_port     = 4646
-//     instance_protocol = "http"
-//     lb_port           = 4646
-//     lb_protocol       = "http"
-//   }
-//   listener {
-//     instance_port     = 8500
-//     instance_protocol = "http"
-//     lb_port           = 8500
-//     lb_protocol       = "http"
-//   }
-//   security_groups = ["${aws_security_group.server_lb.id}"]
-// }
-
-output "server_public_ips" {
-  value = "${google_compute_instance.server.*.network_interface.0.network_ip}"
-}
+# output "server_public_ips" {
+#   value = "${google_compute_instance.server.*.network_interface.0.network_ip}"
+# }
 
 output "client_public_ips" {
-  value = "${google_compute_instance.client.*.network_interface.0.network_ip}"
+  value = google_compute_instance.client.*.network_interface.0.network_ip
 }
 
-// output "server_lb_ip" {
-//   value = "${aws_elb.server_lb.dns_name}"
-// }
+output "server_lb_ip" {
+  value = google_compute_forwarding_rule.default.ip_address
+}
