@@ -2,3 +2,6 @@ infrastructure/terraform/account.json
 infrastructure/terraform/.terraform
 infrastructure/terraform/terraform.tfstate
 infrastructure/terraform/terraform.tfstate.backup
+
+services/axidraw/node_modules
+services/axidraw/dist
