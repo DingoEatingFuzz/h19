@@ -1,4 +1,4 @@
-import log from "./logger";
+import { default as _log } from "./logger";
 import { PlotState } from "./plot-state";
 import PlotTransition from "./plot-transition";
 
@@ -8,7 +8,12 @@ const wait = (ms: number) =>
   });
 
 export default class PlotMachine {
-  public state: PlotState = PlotState.IDLE;
+  public readonly id: string;
+  private state: PlotState = PlotState.IDLE;
+
+  constructor(id: string) {
+    this.id = id;
+  }
 
   public getState(): PlotState {
     return this.state;
@@ -18,17 +23,17 @@ export default class PlotMachine {
     switch (this.state) {
       case PlotState.IDLE:
       case PlotState.PLOTTING:
-        log(`Action "single" has no transition for state "${this.state}"`);
+        this.log(`Action "single" has no transition for state "${this.state}"`);
         return new PlotTransition(this.state);
 
       case PlotState.RAISED:
-        log("Lowering pen");
+        this.log("Lowering pen");
         this.state = PlotState.LOWERED;
         return new PlotTransition(this.state);
 
       case PlotState.LOWERED:
       case PlotState.FREE:
-        log("Raising pen");
+        this.log("Raising pen");
         this.state = PlotState.RAISED;
         return new PlotTransition(this.state);
     }
@@ -40,11 +45,11 @@ export default class PlotMachine {
       case PlotState.PLOTTING:
       case PlotState.LOWERED:
       case PlotState.FREE:
-        log(`Action "double" has no transition for state "${this.state}"`);
+        this.log(`Action "double" has no transition for state "${this.state}"`);
         return new PlotTransition(this.state);
 
       case PlotState.RAISED:
-        log("Releasing motors");
+        this.log("Releasing motors");
         this.state = PlotState.FREE;
         return new PlotTransition(this.state);
     }
@@ -56,11 +61,11 @@ export default class PlotMachine {
       case PlotState.PLOTTING:
       case PlotState.LOWERED:
       case PlotState.FREE:
-        log(`Action "long" has no transition for state "${this.state}"`);
+        this.log(`Action "long" has no transition for state "${this.state}"`);
         return new PlotTransition(this.state);
 
       case PlotState.RAISED:
-        log("Awaiting new SVG to plot");
+        this.log("Awaiting new SVG to plot");
         this.state = PlotState.IDLE;
         return new PlotTransition(this.state);
     }
@@ -70,19 +75,23 @@ export default class PlotMachine {
     switch (newState) {
       case PlotState.PLOTTING:
         if (this.state === PlotState.IDLE) {
-          log("Plotting an SVG");
+          this.log("Plotting an SVG");
           this.state = newState;
           return new PlotTransition(this.state, wait(5000));
         }
       case PlotState.RAISED:
         if (this.state === PlotState.PLOTTING) {
-          log("Plot finished, resetting state");
+          this.log("Plot finished, resetting state");
           this.state = newState;
           return new PlotTransition(this.state);
         }
     }
 
-    log(`Could not transition to state "${newState}" from state "${this.state}"`);
+    this.log(`Could not transition to state "${newState}" from state "${this.state}"`);
     return new PlotTransition(this.state);
+  }
+
+  private log(msg: string): void {
+    _log(`(id:${this.id}) ${msg}`);
   }
 }

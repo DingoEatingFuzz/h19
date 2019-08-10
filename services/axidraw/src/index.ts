@@ -8,8 +8,8 @@ const app = express();
 const port = 8080;
 
 const fsms: { [s: string]: PlotMachine } = {
-  plot1: new PlotMachine(),
-  plot2: new PlotMachine()
+  plot1: new PlotMachine("plot1"),
+  plot2: new PlotMachine("plot2")
 };
 
 const fsmHandler = (handler: (fsm: PlotMachine, req: Request, res: Response) => void) => (
@@ -32,7 +32,7 @@ app.get("/", (req, res) => {
 app.get(
   "/state/:id",
   fsmHandler((fsm, req, res) => {
-    res.json({ state: fsm.getState() });
+    res.json({ state: fsm.getState(), id: fsm.id });
   })
 );
 
@@ -42,7 +42,7 @@ app.post(
     const prev = fsm.getState();
     const transition: PlotTransition = fsm.single();
 
-    res.json({ previousState: prev, state: transition.state });
+    res.json({ previousState: prev, state: transition.state, id: fsm.id });
   })
 );
 
@@ -52,7 +52,7 @@ app.post(
     const prev = fsm.getState();
     const transition: PlotTransition = fsm.double();
 
-    res.json({ previousState: prev, state: transition.state });
+    res.json({ previousState: prev, state: transition.state, id: fsm.id });
   })
 );
 
@@ -62,7 +62,7 @@ app.post(
     const prev = fsm.getState();
     const transition: PlotTransition = fsm.long();
 
-    res.json({ previousState: prev, state: transition.state });
+    res.json({ previousState: prev, state: transition.state, id: fsm.id });
   })
 );
 
@@ -76,7 +76,7 @@ app.post(
       fsm.transition(PlotState.RAISED);
     });
 
-    res.json({ success: prev !== transition.state, state: transition.state });
+    res.json({ success: prev !== transition.state, state: transition.state, id: fsm.id });
   })
 );
 
