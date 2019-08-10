@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import log from "./logger";
 import PlotMachine from "./plot-machine";
 import { PlotState } from "./plot-state";
@@ -7,47 +7,78 @@ import PlotTransition from "./plot-transition";
 const app = express();
 const port = 8080;
 
-const fsm = new PlotMachine();
+const fsms: { [s: string]: PlotMachine } = {
+  plot1: new PlotMachine(),
+  plot2: new PlotMachine()
+};
+
+const fsmHandler = (handler: (fsm: PlotMachine, req: Request, res: Response) => void) => (
+  req: Request,
+  res: Response
+) => {
+  const fsm = fsms[req.params.id];
+  if (!fsm) {
+    res.status(400);
+    res.json({ status: 400, error: `No plotter with ID: ${req.params.id}` });
+  } else {
+    handler(fsm, req, res);
+  }
+};
 
 app.get("/", (req, res) => {
   res.send("Hello world");
 });
 
-app.get("/state", (req, res) => {
-  res.json({ state: fsm.getState() });
-});
+app.get(
+  "/state/:id",
+  fsmHandler((fsm, req, res) => {
+    res.json({ state: fsm.getState() });
+  })
+);
 
-app.post("/single", (req, res) => {
-  const prev = fsm.getState();
-  const transition: PlotTransition = fsm.single();
+app.post(
+  "/single/:id",
+  fsmHandler((fsm, req, res) => {
+    const prev = fsm.getState();
+    const transition: PlotTransition = fsm.single();
 
-  res.json({ previousState: prev, state: transition.state });
-});
+    res.json({ previousState: prev, state: transition.state });
+  })
+);
 
-app.post("/double", (req, res) => {
-  const prev = fsm.getState();
-  const transition: PlotTransition = fsm.double();
+app.post(
+  "/double/:id",
+  fsmHandler((fsm, req, res) => {
+    const prev = fsm.getState();
+    const transition: PlotTransition = fsm.double();
 
-  res.json({ previousState: prev, state: transition.state });
-});
+    res.json({ previousState: prev, state: transition.state });
+  })
+);
 
-app.post("/long", (req, res) => {
-  const prev = fsm.getState();
-  const transition: PlotTransition = fsm.long();
+app.post(
+  "/long/:id",
+  fsmHandler((fsm, req, res) => {
+    const prev = fsm.getState();
+    const transition: PlotTransition = fsm.long();
 
-  res.json({ previousState: prev, state: transition.state });
-});
+    res.json({ previousState: prev, state: transition.state });
+  })
+);
 
-app.post("/plot", (req, res) => {
-  const prev = fsm.getState();
-  const transition = fsm.transition(PlotState.PLOTTING);
+app.post(
+  "/plot/:id",
+  fsmHandler((fsm, req, res) => {
+    const prev = fsm.getState();
+    const transition = fsm.transition(PlotState.PLOTTING);
 
-  transition.watch.then(() => {
-    fsm.transition(PlotState.RAISED);
-  });
+    transition.watch.then(() => {
+      fsm.transition(PlotState.RAISED);
+    });
 
-  res.json({ success: prev !== transition.state, state: transition.state });
-});
+    res.json({ success: prev !== transition.state, state: transition.state });
+  })
+);
 
 app.post("/*", (req, res) => {
   res.status(404);
