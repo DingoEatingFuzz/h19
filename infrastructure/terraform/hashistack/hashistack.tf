@@ -38,7 +38,7 @@ resource "google_compute_firewall" "server_lb" {
 
   allow {
     protocol = "tcp"
-    ports = ["4646", "8500"]
+    ports = ["4646", "8500", "8200", "9998", "9999"]
   }
 }
 
@@ -49,7 +49,7 @@ resource "google_compute_firewall" "primary" {
 
   allow {
     protocol = "tcp"
-    ports = ["22", "4646", "4647", "4648", "8300-8302", "8500-8502", "8600", "9998", "21000-21255"]
+    ports = ["22", "4646", "4647", "4648", "8200", "8300-8302", "8500-8502", "8600", "9998", "21000-21255"]
   }
 }
 
@@ -102,6 +102,10 @@ resource "google_compute_instance_template" "server_template" {
   }
 }
 
+resource "google_compute_address" "public" {
+  name = "${var.name}-public-address"
+}
+
 resource "google_compute_instance_group_manager" "server_group" {
   name = "${var.name}-server-igm"
 
@@ -125,6 +129,18 @@ resource "google_compute_forwarding_rule" "default" {
   load_balancing_scheme = "EXTERNAL"
   port_range            = "80-21255"
   region                = var.region
+  ip_address            = google_compute_address.public.address
+}
+
+resource "google_dns_record_set" "prod" {
+  name    = "hashi.plot.technology."
+  type    = "A"
+  ttl     = 300
+  rrdatas = [google_compute_address.public.address]
+
+  // The managed zone (google_dns_managed_zone) is manually provisioned
+  // to avoid nameservers changing on destroy/apply.
+  managed_zone = "art-plotter-zone"
 }
 
 resource "google_compute_target_pool" "default" {
@@ -155,34 +171,6 @@ resource "google_compute_firewall" "default-lb-fw" {
   source_ranges = ["0.0.0.0/0"]
   source_tags   = ["server-template"]
 }
-
-# resource "google_compute_instance" "server" {
-#   name         = "${var.name}-server-${count.index}"
-#   machine_type = "${var.server_machine_type}"
-#   count        = "${var.server_count}"
-
-#   metadata_startup_script = "${data.template_file.user_data_server.rendered}"
-#   allow_stopping_for_update = true
-
-#   tags = [ "${var.name}-server-${count.index}", "${lookup(var.retry_join, "tag_value")}" ]
-
-#   boot_disk {
-#     initialize_params {
-#       image = "${var.image}"
-#       size = "${var.root_block_device_size}"
-#       type = "pd-ssd"
-#     }
-#   }
-
-#   network_interface {
-#     network = "${google_compute_network.default.name}"
-#     access_config {}
-#   }
-
-#   service_account {
-#     scopes = ["compute-rw"]
-#   }
-# }
 
 //
 // Client nodes
