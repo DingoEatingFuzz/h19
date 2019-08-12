@@ -5,3 +5,5 @@ infrastructure/terraform/terraform.tfstate.backup
 
 services/axidraw/node_modules
 services/axidraw/dist
+services/webhooks/node_modules
+services/webhooks/dist
