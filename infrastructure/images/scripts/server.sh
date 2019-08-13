@@ -74,6 +74,10 @@ echo "nameserver $DOCKER_BRIDGE_IP_ADDRESS" | sudo tee /etc/resolv.conf.new
 cat /etc/resolv.conf | sudo tee --append /etc/resolv.conf.new
 sudo mv /etc/resolv.conf.new /etc/resolv.conf
 
+# Docker auth
+sudo docker-credential-gcr configure-docker
+docker-credential-gcr configure-docker
+
 # Set env vars for tool CLIs
 echo "export CONSUL_RPC_ADDR=$IP_ADDRESS:8400" | sudo tee --append /home/$HOME_DIR/.bashrc
 echo "export CONSUL_HTTP_ADDR=$IP_ADDRESS:8500" | sudo tee --append /home/$HOME_DIR/.bashrc

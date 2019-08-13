@@ -19,7 +19,7 @@ module "hashistack" {
   root_block_device_size = 16
   client_block_size = 50
   whitelist_ip = "0.0.0.0/0"
-  image = "packer-1564731209"
+  image = "packer-1565598234"
 }
 
 output "IP_Addresses" {

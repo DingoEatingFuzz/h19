@@ -59,7 +59,10 @@ echo "nameserver $DOCKER_BRIDGE_IP_ADDRESS" | sudo tee /etc/resolv.conf.new
 cat /etc/resolv.conf | sudo tee --append /etc/resolv.conf.new
 sudo mv /etc/resolv.conf.new /etc/resolv.conf
 
+# Docker auth
+sudo docker-credential-gcr configure-docker
+docker-credential-gcr configure-docker
+
 # Set env vars for tool CLIs
 echo "export VAULT_ADDR=http://$IP_ADDRESS:8200" | sudo tee --append /home/$HOME_DIR/.bashrc
 echo "export NOMAD_ADDR=http://$IP_ADDRESS:4646" | sudo tee --append /home/$HOME_DIR/.bashrc
-

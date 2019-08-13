@@ -108,3 +108,9 @@ curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
 sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/${distro} $(lsb_release -cs) stable"
 sudo apt-get update
 sudo apt-get install -y docker-ce
+
+# Docker credentials tool for GCR
+GCRDOWNLOADURL=https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v1.5.0/docker-credential-gcr_linux_amd64-1.5.0.tar.gz
+sudo curl -fsSL $GCRDOWNLOADURL | tar xz --to-stdout ./docker-credential-gcr > docker-credential-gcr
+sudo mv docker-credential-gcr /usr/bin/docker-credential-gcr
+sudo chmod +x /usr/bin/docker-credential-gcr

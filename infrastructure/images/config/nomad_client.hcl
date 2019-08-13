@@ -7,6 +7,7 @@ client {
   options {
     "driver.raw_exec.enable" = "1"
     "docker.privileged.enabled" = "true"
+    "docker.auth.config" = "/root/.docker/config.json"
   }
 }
 

@@ -98,7 +98,7 @@ resource "google_compute_instance_template" "server_template" {
   metadata_startup_script = "${data.template_file.user_data_server.rendered}"
 
   service_account {
-    scopes = ["compute-rw"]
+    scopes = ["compute-rw", "storage-ro"]
   }
 }
 
@@ -210,7 +210,7 @@ resource "google_compute_instance" "client" {
   }
 
   service_account {
-    scopes = ["compute-rw"]
+    scopes = ["compute-rw", "storage-ro"]
   }
 }
 
