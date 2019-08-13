@@ -1,7 +1,14 @@
 import Consul from "consul";
+import log from "./logger";
+
+const CONSUL_HOST = process.env.CONSUL_HOST;
+if (!CONSUL_HOST) {
+  throw new Error("Consul host must be configured! Set the CONSUL_HOST environment variable");
+}
+log(`Consul host: "${CONSUL_HOST}"`);
 
 const consul = Consul({
-  host: "hashi.plot.technology",
+  host: CONSUL_HOST,
   promisify: (fn: any) => {
     return new Promise((resolve, reject) => {
       try {
