@@ -24,6 +24,40 @@ variable "retry_join" {
 }
 
 //
+// Public internet
+//
+
+resource "google_compute_address" "servers" {
+  name = "${var.name}-public-address"
+}
+
+resource "google_dns_record_set" "prod" {
+  name    = "hashi.plot.technology."
+  type    = "A"
+  ttl     = 300
+  rrdatas = [google_compute_address.servers.address]
+
+  // The managed zone (google_dns_managed_zone) is manually provisioned
+  // to avoid nameservers changing on destroy/apply.
+  managed_zone = "art-plotter-zone"
+}
+
+resource "google_compute_address" "clients" {
+  name = "${var.name}-clients-address"
+}
+
+resource "google_dns_record_set" "clients" {
+  name    = "services.hashi.plot.technology."
+  type    = "A"
+  ttl     = 300
+  rrdatas = [google_compute_address.clients.address]
+
+  // The managed zone (google_dns_managed_zone) is manually provisioned
+  // to avoid nameservers changing on destroy/apply.
+  managed_zone = "art-plotter-zone"
+}
+
+//
 // Security
 //
 
@@ -102,10 +136,6 @@ resource "google_compute_instance_template" "server_template" {
   }
 }
 
-resource "google_compute_address" "public" {
-  name = "${var.name}-public-address"
-}
-
 resource "google_compute_instance_group_manager" "server_group" {
   name = "${var.name}-server-igm"
 
@@ -123,24 +153,13 @@ resource "google_compute_instance_group_manager" "server_group" {
   }
 }
 
-resource "google_compute_forwarding_rule" "default" {
+resource "google_compute_forwarding_rule" "servers" {
   name                  = "${var.name}-lb"
   target                = google_compute_target_pool.default.self_link
   load_balancing_scheme = "EXTERNAL"
   port_range            = "80-21255"
   region                = var.region
-  ip_address            = google_compute_address.public.address
-}
-
-resource "google_dns_record_set" "prod" {
-  name    = "hashi.plot.technology."
-  type    = "A"
-  ttl     = 300
-  rrdatas = [google_compute_address.public.address]
-
-  // The managed zone (google_dns_managed_zone) is manually provisioned
-  // to avoid nameservers changing on destroy/apply.
-  managed_zone = "art-plotter-zone"
+  ip_address            = google_compute_address.servers.address
 }
 
 resource "google_compute_target_pool" "default" {
@@ -185,43 +204,128 @@ data "template_file" "user_data_client" {
   }
 }
 
-resource "google_compute_instance" "client" {
-  name         = "${var.name}-client-${count.index}"
+resource "google_compute_instance_template" "client_template" {
+  name = "${var.name}-client-template"
+  tags = [ "allow-ssh", "client-template", "${lookup(var.retry_join, "tag_value")}" ]
+
+  depends_on = ["google_compute_instance_group_manager.server_group"]
+
+  labels = {
+    environment = "prod"
+  }
+
+  instance_description = "Client node"
   machine_type = "${var.client_machine_type}"
-  count        = "${var.client_count}"
+  can_ip_forward = false
 
-  metadata_startup_script = "${data.template_file.user_data_client.rendered}"
-  allow_stopping_for_update = true
+  scheduling  {
+    automatic_restart = true
+    on_host_maintenance = "MIGRATE"
+  }
 
-  tags = [ "${var.name}-client-${count.index}", "${lookup(var.retry_join, "tag_value")}" ]
-
-  depends_on             = ["google_compute_instance_group_manager.server_group"]
-
-  boot_disk {
-    initialize_params {
-      image = "${var.image}"
-      size = "${var.client_block_size}"
-    }
+  disk {
+    source_image = var.image
+    disk_size_gb = var.client_block_size
+    auto_delete = true
+    boot = true
   }
 
   network_interface {
-    network = "${google_compute_network.default.name}"
+    network = google_compute_network.default.name
     access_config {}
   }
+
+  metadata_startup_script = "${data.template_file.user_data_client.rendered}"
 
   service_account {
     scopes = ["compute-rw", "storage-ro"]
   }
 }
 
-# output "server_public_ips" {
-#   value = "${google_compute_instance.server.*.network_interface.0.network_ip}"
+# resource "google_compute_instance" "client" {
+#   name         = "${var.name}-client-${count.index}"
+#   machine_type = "${var.client_machine_type}"
+#   count        = "${var.client_count}"
+
+#   metadata_startup_script = "${data.template_file.user_data_client.rendered}"
+#   allow_stopping_for_update = true
+
+#   tags = [ "${var.name}-client-${count.index}", "${lookup(var.retry_join, "tag_value")}" ]
+
+#   depends_on             = ["google_compute_instance_group_manager.server_group"]
+
+#   boot_disk {
+#     initialize_params {
+#       image = "${var.image}"
+#       size = "${var.client_block_size}"
+#     }
+#   }
+
+#   network_interface {
+#     network = "${google_compute_network.default.name}"
+#     access_config {}
+#   }
+
+#   service_account {
+#     scopes = ["compute-rw", "storage-ro"]
+#   }
 # }
 
-output "client_public_ips" {
-  value = google_compute_instance.client.*.network_interface.0.network_ip
+resource "google_compute_instance_group_manager" "client_group" {
+  name = "${var.name}-client-igm"
+
+  base_instance_name = "${var.name}"
+  instance_template = "${google_compute_instance_template.client_template.self_link}"
+  update_strategy = "NONE"
+  zone = var.zone
+
+  target_size = var.client_count
+  target_pools = [google_compute_target_pool.clients.self_link]
+
+  named_port {
+    name = "http"
+    port = var.service_port
+  }
+}
+
+resource "google_compute_forwarding_rule" "clients" {
+  name                  = "${var.name}-clients-lb"
+  target                = google_compute_target_pool.clients.self_link
+  load_balancing_scheme = "EXTERNAL"
+  port_range            = "80-21255"
+  region                = var.region
+  ip_address            = google_compute_address.clients.address
+}
+
+resource "google_compute_target_pool" "clients" {
+  name             = "${var.name}-clients-lb"
+  region           = var.region
+  session_affinity = "NONE"
+
+  health_checks = [
+    google_compute_http_health_check.clients.name,
+  ]
+}
+
+resource "google_compute_http_health_check" "clients" {
+  name         = "${var.name}-clients-lb-hc"
+  request_path = "/"
+  port         = 9998
+}
+
+resource "google_compute_firewall" "default-clients-lb-fw" {
+  name    = "${var.name}-clients-lb-vm-service"
+  network = google_compute_network.default.name
+
+  allow {
+    protocol = "tcp"
+    ports    = ["80-65535"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  source_tags   = ["client-template"]
 }
 
 output "server_lb_ip" {
-  value = google_compute_forwarding_rule.default.ip_address
+  value = google_compute_forwarding_rule.servers.ip_address
 }
