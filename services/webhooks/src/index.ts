@@ -1,9 +1,10 @@
 import axios from "axios";
 import express from "express";
 import Backend from "./backend";
-import log from "./logger";
+import { debug, default as log } from "./logger";
 
 const backend = new Backend();
+const DEBUG = !!process.env.DEBUG;
 
 const app = express();
 const port = 8081;
@@ -11,11 +12,13 @@ const port = 8081;
 let axidrawAddress: string;
 
 app.get("/", (req, res) => {
+  debug(`Request made to ${req.url}`);
   res.json({ healthy: true });
 });
 
 app.post("/single/:id", async (req, res) => {
   // Get state of axidraw
+  debug(`Request made to ${req.url}`);
   const state = await backend.getState(req.params.id);
   log(`What is it? ${req.params.id} ${state}`);
   if (state) {
@@ -47,7 +50,14 @@ app.post("/single/:id", async (req, res) => {
   // otherwise, proxy request
 });
 
+app.get("/*", (req, res) => {
+  debug(`Request made to nonexistent path ${req.url}`);
+  res.status(404);
+  res.json({ status: 404, error: "Not found" });
+});
+
 app.post("/*", async (req, res) => {
+  debug(`Request made to ${req.url}`);
   try {
     const proxyResponse = await axios.post(`${axidrawAddress}${req.url}`, req.body);
     res.status(200);
