@@ -1,6 +1,6 @@
 build:
-	docker build -t dingoeatingfuzz/art-plotter-webhooks .
+	docker build -t dingoeatingfuzz/h19-webhooks .
 
 publish:
-	docker tag dingoeatingfuzz/art-plotter-webhooks gcr.io/hashiconf19/webhooks:$$VERSION
-	docker push gcr.io/hashiconf19/webhooks:$$VERSION
+	docker tag dingoeatingfuzz/h19-webhooks dingoeatingfuzz/h19-webhooks:$$VERSION
+	docker push dingoeatingfuzz/h19-webhooks:$$VERSION
