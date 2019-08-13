@@ -3,39 +3,47 @@ job "webhooks" {
 
   type = "service"
 
-  task "webhooks" {
-    driver = "docker"
+  group "webhooks" {
+    count = 2
 
-    config {
-      image = "dingoeatingfuzz/h19-webhooks:0.1.0"
-      port_map {
-        api = 8081
+    constraint {
+      distinct_hosts = true
+    }
+
+    task "webhooks" {
+      driver = "docker"
+
+      config {
+        image = "dingoeatingfuzz/h19-webhooks:0.2.0"
+        port_map {
+          api = 8081
+        }
       }
-    }
 
-    env {
-      CONSUL_HOST = "hashi.plot.technology:8500"
-    }
-
-    resources {
-      cpu = 500
-      memory = 256
-      network {
-        mbits = 10
-        port "api" {}
+      env {
+        CONSUL_HOST = "hashi.plot.technology:8500"
       }
-    }
 
-    service {
-      name = "webhooks"
-      tags = ["urlprefix-/webhooks strip=/webhooks"]
-      port = "api"
-      check {
-        name = "alive"
-        type = "http"
-        path = "/"
-        interval = "30s"
-        timeout = "2s"
+      resources {
+        cpu = 500
+        memory = 256
+        network {
+          mbits = 10
+          port "api" {}
+        }
+      }
+
+      service {
+        name = "webhooks"
+        tags = ["urlprefix-/webhooks strip=/webhooks"]
+        port = "api"
+        check {
+          name = "alive"
+          type = "http"
+          path = "/"
+          interval = "30s"
+          timeout = "2s"
+        }
       }
     }
   }
