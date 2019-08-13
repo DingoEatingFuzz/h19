@@ -7,10 +7,7 @@ job "webhooks" {
     driver = "docker"
 
     config {
-      image = "https://gcr.io/hashiconf19/webhooks:0.0.1"
-      auth {
-        server_address = "https://gcr.io"
-      }
+      image = "dingoeatingfuzz/h19-webhooks:0.1.0"
       port_map {
         api = 8081
       }
@@ -31,7 +28,7 @@ job "webhooks" {
 
     service {
       name = "webhooks"
-      tags = ["webhooks", "urlprefix-/"]
+      tags = ["urlprefix-/webhooks strip=/webhooks"]
       port = "api"
       check {
         name = "alive"
