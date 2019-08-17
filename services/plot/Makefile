@@ -1,4 +1,5 @@
 build:
+	npm run build
 	docker build -t dingoeatingfuzz/h19-plot .
 
 publish:
