@@ -4,7 +4,6 @@ import { default as Backend, IDispatchResponse } from "./backend";
 import { debug, default as log } from "./logger";
 
 const backend = new Backend();
-const DEBUG = !!process.env.DEBUG;
 
 const app = express();
 const port = 8081;
@@ -35,6 +34,8 @@ app.post("/single/:id", async (req, res) => {
           status: 200
         });
       } catch (err) {
+        debug(`Dispatch request errored for plotter "${req.params.id}"`);
+        debug(err);
         res.status(500);
         res.send({
           error: `Could not queue job for plotter "${req.params.id}": ${err}`,

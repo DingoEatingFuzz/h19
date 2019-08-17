@@ -1,8 +1,9 @@
 import axios from "axios";
 import Consul from "consul";
-import log from "./logger";
+import { debug, default as log } from "./logger";
 
 const CONSUL_HOST = process.env.CONSUL_HOST;
+const CONSUL_PORT = process.env.CONSUL_PORT || "8500";
 const NOMAD_HOST = process.env.NOMAD_HOST;
 const PLOTTER_JOBS: { [s: string]: string } = {
   plot1: "plotter1",
@@ -35,11 +36,12 @@ if (!CONSUL_HOST) {
 if (!NOMAD_HOST) {
   throw new Error("Nomad host must be configured! Set the NOMAD_HOST environment variable");
 }
-log(`Consul host: "${CONSUL_HOST}"`);
+log(`Consul host: "${CONSUL_HOST}:${CONSUL_PORT}"`);
 log(`Nomad host: "${NOMAD_HOST}"`);
 
 const consul = Consul({
   host: CONSUL_HOST,
+  port: CONSUL_PORT,
   promisify: (fn: any) => {
     return new Promise((resolve, reject) => {
       try {
@@ -85,17 +87,19 @@ export default class Backend {
   }
 
   public async submitJob(id: string) {
-    const currentProduct: string = await consul.kv.get("current_product");
+    const [data] = await consul.kv.get("current_product");
+    const currentProduct: string = data && data.Value;
     const payload = {
       product: currentProduct,
       ts: +new Date()
     };
+    debug(`Dispatch payload: ${JSON.stringify(payload)}`);
 
     try {
       const submitResponse: IDispatchResponse = await axios.post(
         `${NOMAD_HOST}/v1/job/${plotterJob(id)}/dispatch`,
         {
-          Payload: payload
+          Payload: Buffer.from(JSON.stringify(payload)).toString("base64")
         }
       );
       log(`Dispatched a plotter job for plotter "${id}": ${submitResponse.DispatchedJobID}`);
