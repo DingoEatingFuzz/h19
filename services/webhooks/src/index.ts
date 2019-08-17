@@ -1,6 +1,6 @@
 import axios from "axios";
 import express from "express";
-import Backend from "./backend";
+import { default as Backend, IDispatchResponse } from "./backend";
 import { debug, default as log } from "./logger";
 
 const backend = new Backend();
@@ -17,15 +17,32 @@ app.get("/", (req, res) => {
 });
 
 app.post("/single/:id", async (req, res) => {
-  // Get state of axidraw
   debug(`Request made to ${req.url}`);
+
   const state = await backend.getState(req.params.id);
   log(`What is it? ${req.params.id} ${state}`);
+
   if (state) {
     if (state === "idle" || state === "plotting") {
+      // Queue a job when idle or plotting
       log(`State is "${state}", queuing new plot job`);
-      res.send({ status: 200, message: "Queued new plot job", id: req.params.id });
+      try {
+        const dispatched: IDispatchResponse = await backend.submitJob(req.params.id);
+        res.send({
+          id: req.params.id,
+          jobId: dispatched.DispatchedJobID,
+          message: "Queued new plot job",
+          status: 200
+        });
+      } catch (err) {
+        res.status(500);
+        res.send({
+          error: `Could not queue job for plotter "${req.params.id}": ${err}`,
+          status: 500
+        });
+      }
     } else {
+      // Proxy the request to the local axidraw service otherwise
       try {
         const proxyResponse = await axios.get(`${axidrawAddress}/single/${req.params.id}`);
         res.status(307);
@@ -46,8 +63,6 @@ app.post("/single/:id", async (req, res) => {
       status: 500
     });
   }
-  // If currently idle or plotting, dispatch job
-  // otherwise, proxy request
 });
 
 app.get("/*", (req, res) => {

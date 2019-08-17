@@ -1,11 +1,42 @@
+import axios from "axios";
 import Consul from "consul";
 import log from "./logger";
 
 const CONSUL_HOST = process.env.CONSUL_HOST;
+const NOMAD_HOST = process.env.NOMAD_HOST;
+const PLOTTER_JOBS: { [s: string]: string } = {
+  plot1: "plotter1",
+  plot2: "plotter2"
+};
+
+const PRODUCT_ORDER = ["vagrant", "packer", "consul", "terraform", "vault", "nomad"];
+
+function plotterJob(id: string): string {
+  const jobName: string = PLOTTER_JOBS[id];
+
+  if (!jobName) {
+    throw new Error(`No assigned job to ID "${id}"`);
+  }
+
+  return jobName;
+}
+
+export interface IDispatchResponse {
+  DispatchedJobID: string;
+  EvalID: string;
+  EvalCreateIndex: number;
+  JobCreateIndex: number;
+  Index: number;
+}
+
 if (!CONSUL_HOST) {
   throw new Error("Consul host must be configured! Set the CONSUL_HOST environment variable");
 }
+if (!NOMAD_HOST) {
+  throw new Error("Nomad host must be configured! Set the NOMAD_HOST environment variable");
+}
 log(`Consul host: "${CONSUL_HOST}"`);
+log(`Nomad host: "${NOMAD_HOST}"`);
 
 const consul = Consul({
   host: CONSUL_HOST,
@@ -50,6 +81,39 @@ export default class Backend {
     } catch (err) {
       this.healthy = false;
       return null;
+    }
+  }
+
+  public async submitJob(id: string) {
+    const currentProduct: string = await consul.kv.get("current_product");
+    const payload = {
+      product: currentProduct,
+      ts: +new Date()
+    };
+
+    try {
+      const submitResponse: IDispatchResponse = await axios.post(
+        `${NOMAD_HOST}/v1/job/${plotterJob(id)}/dispatch`,
+        {
+          Payload: payload
+        }
+      );
+      log(`Dispatched a plotter job for plotter "${id}": ${submitResponse.DispatchedJobID}`);
+      await this.incrementProduct(currentProduct);
+      return submitResponse;
+    } catch (err) {
+      log(`ERROR!! ${err}`);
+      throw err;
+    }
+  }
+
+  private async incrementProduct(product: string) {
+    const index = PRODUCT_ORDER.indexOf(product);
+    const newProduct = PRODUCT_ORDER[(index + 1) % PRODUCT_ORDER.length];
+    try {
+      await consul.kv.set("current_product", newProduct);
+    } catch (err) {
+      log(`ERROR!! Could not set Consul key "current_product" to new value "${newProduct}"`);
     }
   }
 }
