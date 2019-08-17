@@ -3,9 +3,11 @@ import fs from "fs";
 import log from "./logger";
 
 const CONSUL_HOST = process.env.CONSUL_HOST;
+const CONSUL_PORT = process.env.CONSUL_PORT || "8500";
 
 const consul = Consul({
   host: CONSUL_HOST,
+  port: CONSUL_PORT,
   promisify: (fn: any) => {
     return new Promise((resolve, reject) => {
       try {
@@ -40,13 +42,28 @@ try {
 }
 
 consul.kv.get("axidraw_address").then(
-  (axidrawAddress: string) => {
+  (res: any[]) => {
+    const [data] = res;
+    const axidrawAddress = data && data.Value;
     log(`Axidraw Address: ${axidrawAddress}`);
     log(`Making plot for product "${config.product}" at timestamp "${config.ts}"`);
 
     setTimeout(() => {
       process.exit();
     }, 120000);
+
+    // long-poll to the plot endpoint with timestamp
+    // response will either be wait (poll again)
+    // or continue (submit an svg)
+    // when continuing...
+    // generate an svg
+    // upload the svg to GCS
+    // update the consul kv for the plot1 preview svg
+    // POST the svg to the axidraw service
+    // response to the POST request will be an eventsource
+    // subscribe to the event source
+    // when the event source sends the "done" request, terminate
+    // as the event source send coordinates, forward to the preview service? update kv?
   },
   (err) => {
     log(`Could not connect to Axidraw: ${err}`);

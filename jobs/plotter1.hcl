@@ -12,7 +12,7 @@ job "plotter1" {
       driver = "docker"
 
       config {
-        image = "dingoeatingfuzz/h19-plot:0.0.1"
+        image = "dingoeatingfuzz/h19-plot:0.0.3"
       }
 
       dispatch_payload {
@@ -20,7 +20,8 @@ job "plotter1" {
       }
 
       env {
-        CONSUL_HOST = "hashi.plot.technology:8500"
+        CONSUL_HOST = "hashi.plot.technology"
+        CONSUL_PORT = "8500"
       }
 
       resources {
