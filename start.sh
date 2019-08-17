@@ -1,10 +1,12 @@
 echo "Configuring environment..."
-export NOMAD_ADDR=hashi.plot.technology:4646
-export CONSUL_HOST=hashi.plot.technology:8500
+export NOMAD_ADDR=http://hashi.plot.technology:4646
+export CONSUL_HOST=http://hashi.plot.technology:8500
 
 echo "Setting consul key/values..."
-consul kv put axidraw_address $1
-consul kv put current_product vagrant
+curl -XPUT --data $1 $CONSUL_HOST/v1/kv/axidraw_address
+curl -XPUT --data idle $CONSUL_HOST/v1/kv/axidraw_plot1_state
+curl -XPUT --data idle $CONSUL_HOST/v1/kv/axidraw_plot2_state
+curl -XPUT --data vagrant $CONSUL_HOST/v1/kv/current_product
 
 echo "Starting nomad jobs..."
 nomad run jobs/fabio.hcl
