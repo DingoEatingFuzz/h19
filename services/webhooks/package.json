@@ -13,12 +13,12 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@types/consul": "^0.23.33",
     "axios": "^0.19.0",
     "consul": "^0.35.0",
     "express": "^4.17.1"
   },
   "devDependencies": {
+    "@types/consul": "^0.23.33",
     "@types/express": "^4.17.0",
     "@types/node": "^12.7.1",
     "tslint": "^5.18.0",
