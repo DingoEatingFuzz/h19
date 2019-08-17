@@ -4,7 +4,7 @@ job "webhooks" {
   type = "service"
 
   group "webhooks" {
-    count = 2
+    count = 1
 
     constraint {
       distinct_hosts = true
@@ -14,15 +14,17 @@ job "webhooks" {
       driver = "docker"
 
       config {
-        image = "dingoeatingfuzz/h19-webhooks:0.3.0"
+        image = "dingoeatingfuzz/h19-webhooks:0.3.5"
         port_map {
           api = 8081
         }
       }
 
       env {
-        CONSUL_HOST = "hashi.plot.technology:8500"
-        NOMAD_HOST  = "hashi.plot.technology:4646"
+        CONSUL_HOST = "hashi.plot.technology"
+        CONSUL_PORT = "8500"
+        NOMAD_HOST  = "http://hashi.plot.technology:4646"
+        DEBUG       = "true"
       }
 
       resources {
