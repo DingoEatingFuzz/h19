@@ -9,3 +9,4 @@ consul kv put current_product vagrant
 echo "Starting nomad jobs..."
 nomad run jobs/fabio.hcl
 nomad run jobs/webhooks.hcl
+nomad run jobs/plotter1.hcl
