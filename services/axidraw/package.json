@@ -14,11 +14,15 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "flatten-svg": "^0.1.1",
+    "serialport": "^7.1.5",
+    "wake-lock": "^0.2.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.0",
     "@types/node": "^12.7.1",
+    "@types/serialport": "^7.0.4",
     "tslint": "^5.18.0",
     "typescript": "^3.5.3"
   }

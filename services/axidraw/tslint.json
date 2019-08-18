@@ -1,6 +1,9 @@
 {
   "defaultSeverity": "error",
   "extends": ["tslint:recommended"],
+  "linterOptions": {
+    "exclude": ["src/saxi/*.ts"]
+  },
   "jsRules": {},
   "rules": {
     "trailing-comma": [false]
