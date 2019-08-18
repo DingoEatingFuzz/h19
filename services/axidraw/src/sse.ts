@@ -4,7 +4,7 @@ export default function(req: Request, res: Response, next: () => void) {
   res.sseSetup = () => {
     res.writeHead(200, {
       "Cache-Control": "no-cache",
-      Connection: "keep-alive",
+      "Connection": "keep-alive",
       "Content-Type": "text/event-stream"
     });
   };

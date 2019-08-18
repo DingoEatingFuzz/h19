@@ -105,7 +105,7 @@ export default class PlotMachine {
       case PlotState.RAISED:
         if (this.state === PlotState.PLOTTING) {
           if (this.activeRequest) {
-            this.activeRequest.res.sseSend({ done: true });
+            this.activeRequest.res.sseSend({ done: true, duration: 0 });
           }
           this.log("Plot finished, resetting state");
           this.state = newState;
