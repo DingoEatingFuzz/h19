@@ -45,7 +45,7 @@ app.post("/single/:id", async (req, res) => {
     } else {
       // Proxy the request to the local axidraw service otherwise
       try {
-        const proxyResponse = await axios.get(`${axidrawAddress}/single/${req.params.id}`);
+        const proxyResponse = await axios.post(`${axidrawAddress}/single/${req.params.id}`);
         res.status(307);
         res.send(proxyResponse);
       } catch (err) {
