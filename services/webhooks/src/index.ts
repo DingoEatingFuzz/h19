@@ -19,7 +19,6 @@ app.post("/single/:id", async (req, res) => {
   debug(`Request made to ${req.url}`);
 
   const state = await backend.getState(req.params.id);
-  log(`What is it? ${req.params.id} ${state}`);
 
   if (state) {
     if (state === "idle" || state === "plotting") {
@@ -44,10 +43,11 @@ app.post("/single/:id", async (req, res) => {
       }
     } else {
       // Proxy the request to the local axidraw service otherwise
+      log(`State is "${state}", forwarding request to axidraw service`);
       try {
         const proxyResponse = await axios.post(`${axidrawAddress}/single/${req.params.id}`);
         res.status(307);
-        res.send(proxyResponse);
+        res.send(proxyResponse.data);
       } catch (err) {
         res.status(500);
         res.send({
@@ -73,11 +73,11 @@ app.get("/*", (req, res) => {
 });
 
 app.post("/*", async (req, res) => {
-  debug(`Request made to ${req.url}`);
+  log(`Request made to ${req.url}, forwarding request to axidraw service`);
   try {
     const proxyResponse = await axios.post(`${axidrawAddress}${req.url}`, req.body);
     res.status(200);
-    res.json(proxyResponse);
+    res.json(proxyResponse.data);
   } catch (err) {
     res.status(500);
     res.send({

@@ -86,7 +86,7 @@ export default class Backend {
     }
   }
 
-  public async submitJob(id: string) {
+  public async submitJob(id: string): Promise<IDispatchResponse> {
     const [data] = await consul.kv.get("current_product");
     const currentProduct: string = data && data.Value;
     const payload = {
@@ -96,15 +96,13 @@ export default class Backend {
     debug(`Dispatch payload: ${JSON.stringify(payload)}`);
 
     try {
-      const submitResponse: IDispatchResponse = await axios.post(
-        `${NOMAD_HOST}/v1/job/${plotterJob(id)}/dispatch`,
-        {
-          Payload: Buffer.from(JSON.stringify(payload)).toString("base64")
-        }
-      );
-      log(`Dispatched a plotter job for plotter "${id}": ${submitResponse.DispatchedJobID}`);
+      const submitResponse = await axios.post(`${NOMAD_HOST}/v1/job/${plotterJob(id)}/dispatch`, {
+        Payload: Buffer.from(JSON.stringify(payload)).toString("base64")
+      });
+      const dispatchResponse: IDispatchResponse = submitResponse.data;
+      log(`Dispatched a plotter job for plotter "${id}": ${dispatchResponse.DispatchedJobID}`);
       await this.incrementProduct(currentProduct);
-      return submitResponse;
+      return dispatchResponse;
     } catch (err) {
       log(`ERROR!! ${err}`);
       throw err;
