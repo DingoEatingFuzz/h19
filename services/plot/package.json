@@ -13,11 +13,14 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@google-cloud/storage": "^3.1.0",
     "axios": "^0.19.0",
-    "consul": "^0.35.0"
+    "consul": "^0.35.0",
+    "eventsource": "^1.0.7"
   },
   "devDependencies": {
     "@types/consul": "^0.23.33",
+    "@types/eventsource": "^1.1.2",
     "@types/node": "^12.7.1",
     "tslint": "^5.18.0",
     "typescript": "^3.5.3"
