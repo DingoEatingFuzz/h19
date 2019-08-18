@@ -14,7 +14,7 @@ job "webhooks" {
       driver = "docker"
 
       config {
-        image = "dingoeatingfuzz/h19-webhooks:0.3.5"
+        image = "dingoeatingfuzz/h19-webhooks:0.3.9"
         port_map {
           api = 8081
         }
@@ -24,7 +24,6 @@ job "webhooks" {
         CONSUL_HOST = "hashi.plot.technology"
         CONSUL_PORT = "8500"
         NOMAD_HOST  = "http://hashi.plot.technology:4646"
-        DEBUG       = "true"
       }
 
       resources {
