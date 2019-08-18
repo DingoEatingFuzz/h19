@@ -1,18 +1,22 @@
 import SerialPort from "serialport";
+import WakeLock from "wake-lock";
 import log from "./logger";
 import { EBB } from "./saxi/ebb";
 import { Device } from "./saxi/planning";
+import { SVG } from "./svg";
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 enum AxidrawStatus {
   UP = "up",
   DOWN = "down",
-  CONNECTING = "connecting"
+  CONNECTING = "connecting",
+  PLOTTING = "plotting"
 }
 
 export class Axidraw {
   public com: string;
+  public estimate: number = 0;
   private privateStatus: AxidrawStatus;
   private ebb: EBB;
 
@@ -52,38 +56,73 @@ export class Axidraw {
     }
   }
 
-  public enableMotors(): boolean {
+  public async enableMotors(): Promise<boolean> {
     if (this.isUp) {
-      this.ebb.enableMotors(2);
+      await this.ebb.enableMotors(2);
       return true;
     }
     return false;
   }
 
-  public disableMotors(): boolean {
+  public async disableMotors(): Promise<boolean> {
     if (this.isUp) {
-      this.ebb.disableMotors();
+      await this.ebb.disableMotors();
       return true;
     }
     return false;
   }
 
-  public raisePen(): boolean {
+  public async raisePen(): Promise<boolean> {
     if (this.isUp) {
-      this.enableMotors();
-      this.ebb.setPenHeight(Device.Axidraw.penPctToPos(50), 1000);
+      await this.enableMotors();
+      await this.ebb.setPenHeight(Device.Axidraw.penPctToPos(50), 1000);
       return true;
     }
     return false;
   }
 
-  public lowerPen(): boolean {
+  public async lowerPen(): Promise<boolean> {
     if (this.isUp) {
-      this.enableMotors();
-      this.ebb.setPenHeight(Device.Axidraw.penPctToPos(70), 1000);
+      await this.enableMotors();
+      await this.ebb.setPenHeight(Device.Axidraw.penPctToPos(70), 1000);
       return true;
     }
     return false;
+  }
+
+  public async plot(svg: string): Promise<number> {
+    if (this.isUp) {
+      const plan = new SVG(svg).plan();
+      this.estimate = plan.duration();
+      this.privateStatus = AxidrawStatus.PLOTTING;
+
+      const lock = this.lock();
+      const begin = Date.now();
+
+      try {
+        await this.raisePen();
+        for (const motion of plan.motions) {
+          await this.ebb.executeMotion(motion);
+        }
+        await this.ebb.waitUntilMotorsIdle();
+
+        const end = Date.now();
+        return end - begin;
+      } finally {
+        if (lock) {
+          lock.release();
+        }
+      }
+    }
+    return null;
+  }
+
+  private lock() {
+    try {
+      return new WakeLock("plotting");
+    } catch (err) {
+      log(`WARNING: Could not acquire wake lock.`);
+    }
   }
 
   private async reconnect(): Promise<void> {

@@ -4,6 +4,7 @@ import { Axidraw } from "./axidraw";
 import { default as _log } from "./logger";
 import { PlotState } from "./plot-state";
 import PlotTransition from "./plot-transition";
+import { formatDuration } from "./saxi/util";
 
 interface IPlotRequest {
   ts: number;
@@ -20,23 +21,37 @@ export default class PlotMachine {
   public plotRequests: IPlotRequest[] = [];
   public activeRequest: IPlotRequest;
   public svg: string;
-  private state: PlotState = PlotState.IDLE;
+  private internalState: PlotState = PlotState.IDLE;
   private axidraw: Axidraw;
   private clearHeartbeatToken: any;
   private internalPlotKey: string;
+  private consul: any;
+  private prevDuration: number = 0;
+
+  private set state(newState: PlotState) {
+    this.consul.kv.set(`axidraw_${this.id}_state`, newState.toString());
+    this.internalState = newState;
+  }
+
+  private get state() {
+    return this.internalState;
+  }
 
   public get plotKey() {
     return this.internalPlotKey;
   }
 
-  constructor(id: string, axidraw: Axidraw) {
+  constructor(id: string, axidraw: Axidraw, consul: any) {
     this.id = id;
     this.axidraw = axidraw;
+    this.consul = consul;
+
     this.clearHeartbeatToken = this.heartbeat();
+    this.pollForPlot();
   }
 
   public getState(): PlotState {
-    return this.state;
+    return this.internalState;
   }
 
   public single(): PlotTransition {
@@ -98,16 +113,22 @@ export default class PlotMachine {
     switch (newState) {
       case PlotState.PLOTTING:
         if (this.state === PlotState.IDLE) {
-          this.log("Plotting an SVG");
+          const plotPromise = this.axidraw.plot(this.svg);
+          this.log(`Plotting an SVG (estimate: ${formatDuration(this.axidraw.estimate)})`);
+          plotPromise.then((duration) => {
+            this.prevDuration = duration;
+          });
           this.state = newState;
-          return new PlotTransition(this.state, wait(5000));
+          return new PlotTransition(this.state, plotPromise);
         }
       case PlotState.RAISED:
         if (this.state === PlotState.PLOTTING) {
           if (this.activeRequest) {
-            this.activeRequest.res.sseSend({ done: true, duration: 0 });
+            this.activeRequest.res.sseSend({ done: true, duration: this.prevDuration });
           }
-          this.log("Plot finished, resetting state");
+          this.log(
+            `Plot finished, resetting state (duration: ${formatDuration(this.prevDuration)})`
+          );
           this.state = newState;
           return new PlotTransition(this.state);
         }
@@ -124,6 +145,7 @@ export default class PlotMachine {
         const nextRequest = this.plotRequests.sort((a, b) => a.ts - b.ts)[0];
         // Tell that request/connection/dispatch job to proceed
         this.internalPlotKey = uuid();
+        this.log(`Queued plot job accepted: ${nextRequest.ts} (key: ${this.internalPlotKey})`);
         nextRequest.res.sseSend({ proceed: this.internalPlotKey });
         // Remove the request from the queue
         this.plotRequests.splice(this.plotRequests.indexOf(nextRequest), 1);

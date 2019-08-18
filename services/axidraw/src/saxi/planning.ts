@@ -25,6 +25,7 @@ export interface PlanOptions {
   penLiftDuration: number;
 
   sortPaths: boolean;
+  fitToPaper: boolean;
 
   minimumPathLength: number;
 }

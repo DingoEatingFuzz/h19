@@ -1,3 +1,4 @@
+import Consul from "consul";
 import express, { Request, Response } from "express";
 import discoverAxidraws from "./axidraw";
 import log from "./logger";
@@ -9,6 +10,29 @@ import sse from "./sse";
 const app = express();
 const port = 8080;
 const MAX_QUEUE_LENGTH = 10;
+
+const CONSUL_HOST = process.env.CONSUL_HOST;
+const CONSUL_PORT = process.env.CONSUL_PORT || "8500";
+
+const consul = Consul({
+  host: CONSUL_HOST,
+  port: CONSUL_PORT,
+  promisify: (fn: any) => {
+    return new Promise((resolve, reject) => {
+      try {
+        return fn((err: any, data: any, res: any) => {
+          if (err) {
+            err.res = res;
+            return reject(err);
+          }
+          return resolve([data, res]);
+        });
+      } catch (err) {
+        return reject(err);
+      }
+    });
+  }
+});
 
 app.use(sse);
 app.use(express.json());
@@ -111,8 +135,10 @@ app.get(
     const ts = req.query.ts;
     res.sseSetup();
     if (fsm.plotRequests.length >= MAX_QUEUE_LENGTH) {
+      log(`Plot job denied due to max queue length: ${ts}`);
       res.sseSend({ connected: false, reason: `Queue full (${MAX_QUEUE_LENGTH} entries)` });
     } else {
+      log(`New plot job in queue: ${ts}`);
       res.sseSend({ connected: true });
       fsm.plotRequests.push({ res, ts });
     }
@@ -129,7 +155,7 @@ discoverAxidraws().then((axidraws) => {
   axidraws.forEach((axidraw, index) => {
     const id = `plot${index + 1}`;
     log(`Registering PlotMachine: ${id}`);
-    fsms[id] = new PlotMachine(id, axidraw);
+    fsms[id] = new PlotMachine(id, axidraw, consul);
   });
 
   app.listen(port, () => {
