@@ -14,9 +14,11 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@types/uuid": "^3.4.5",
     "express": "^4.17.1",
     "flatten-svg": "^0.1.1",
     "serialport": "^7.1.5",
+    "uuid": "^3.3.2",
     "wake-lock": "^0.2.0"
   },
   "devDependencies": {

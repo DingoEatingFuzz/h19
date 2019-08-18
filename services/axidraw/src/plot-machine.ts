@@ -1,7 +1,14 @@
+import { Response } from "express";
+import uuid from "uuid/v4";
 import { Axidraw } from "./axidraw";
 import { default as _log } from "./logger";
 import { PlotState } from "./plot-state";
 import PlotTransition from "./plot-transition";
+
+interface IPlotRequest {
+  ts: number;
+  res: Response;
+}
 
 const wait = (ms: number) =>
   new Promise((resolve) => {
@@ -10,12 +17,22 @@ const wait = (ms: number) =>
 
 export default class PlotMachine {
   public readonly id: string;
+  public plotRequests: IPlotRequest[] = [];
+  public activeRequest: IPlotRequest;
+  public svg: string;
   private state: PlotState = PlotState.IDLE;
   private axidraw: Axidraw;
+  private clearHeartbeatToken: any;
+  private internalPlotKey: string;
+
+  public get plotKey() {
+    return this.internalPlotKey;
+  }
 
   constructor(id: string, axidraw: Axidraw) {
     this.id = id;
     this.axidraw = axidraw;
+    this.clearHeartbeatToken = this.heartbeat();
   }
 
   public getState(): PlotState {
@@ -73,7 +90,7 @@ export default class PlotMachine {
       case PlotState.RAISED:
         this.log("Awaiting new SVG to plot");
         this.state = PlotState.IDLE;
-        return new PlotTransition(this.state);
+        return new PlotTransition(this.state, this.pollForPlot());
     }
   }
 
@@ -87,6 +104,9 @@ export default class PlotMachine {
         }
       case PlotState.RAISED:
         if (this.state === PlotState.PLOTTING) {
+          if (this.activeRequest) {
+            this.activeRequest.res.sseSend({ done: true });
+          }
           this.log("Plot finished, resetting state");
           this.state = newState;
           return new PlotTransition(this.state);
@@ -95,6 +115,38 @@ export default class PlotMachine {
 
     this.log(`Could not transition to state "${newState}" from state "${this.state}"`);
     return new PlotTransition(this.state);
+  }
+
+  private async pollForPlot(): Promise<IPlotRequest> {
+    while (true) {
+      if (this.plotRequests.length) {
+        // Grab the request with the earliest timestamp
+        const nextRequest = this.plotRequests.sort((a, b) => a.ts - b.ts)[0];
+        // Tell that request/connection/dispatch job to proceed
+        this.internalPlotKey = uuid();
+        nextRequest.res.sseSend({ proceed: this.internalPlotKey });
+        // Remove the request from the queue
+        this.plotRequests.splice(this.plotRequests.indexOf(nextRequest), 1);
+        this.activeRequest = nextRequest;
+        return nextRequest;
+      } else {
+        await wait(1000);
+      }
+    }
+  }
+
+  private heartbeat() {
+    return setInterval(() => {
+      this.plotRequests.forEach((conn) => {
+        conn.res.sseSend({ heartbeat: Date.now() });
+      });
+    }, 5000);
+  }
+
+  private stopHeartbeating(): void {
+    if (this.clearHeartbeatToken) {
+      clearInterval(this.clearHeartbeatToken);
+    }
   }
 
   private log(msg: string): void {
