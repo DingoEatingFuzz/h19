@@ -1,5 +1,6 @@
 import { flattenSVG } from "flatten-svg";
 import { Window } from "svgdom";
+import log from "./logger";
 import { PaperSize } from "./saxi/paper-size";
 import { Plan, PlanOptions } from "./saxi/planning";
 import replan from "./saxi/replan";
@@ -8,9 +9,9 @@ import { Vec2 } from "./saxi/vec";
 const window = new Window();
 
 const planOptions: PlanOptions = {
-  fitToPaper: false,
+  fitToPaper: true,
   marginMm: 20,
-  paperSize: PaperSize.standard.USLetter.portrait,
+  paperSize: PaperSize.standard.A6.landscape,
   pathJoinRadius: 0.5,
   penDownHeight: 60,
   penUpHeight: 50,
@@ -41,10 +42,17 @@ export class SVG {
 
   public plan(): Plan {
     const paths = this.readSvg();
-    return replan(paths, planOptions);
+    if (paths) {
+      return replan(paths, planOptions);
+    }
   }
 
   private readSvg(): Vec2[][] {
+    if (!this.src) {
+      log("SVG to plot was undefined");
+      return null;
+    }
+
     window.document.documentElement.innerHTML = this.src;
     const paths = flattenSVG(window.document.documentElement);
     // Turn geometry into a data structure like
@@ -52,8 +60,9 @@ export class SVG {
     //   [ {x: 0, y: 0}, {x: 1, y:0} ],
     //   [ {x: 1, y: 0}, {x: 1, y:1} ],
     // ]
-    return paths.map((line: any) => {
+    const coords = paths.map((line: any) => {
       return line.points.map(([x, y]: [number, number]) => ({ x, y }));
     });
+    return coords;
   }
 }
