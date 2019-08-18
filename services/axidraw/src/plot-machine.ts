@@ -45,6 +45,7 @@ export default class PlotMachine {
     this.id = id;
     this.axidraw = axidraw;
     this.consul = consul;
+    this.state = PlotState.RAISED;
 
     this.clearHeartbeatToken = this.heartbeat();
     this.pollForPlot();
@@ -127,7 +128,7 @@ export default class PlotMachine {
             this.activeRequest.res.sseSend({ done: true, duration: this.prevDuration });
           }
           this.log(
-            `Plot finished, resetting state (duration: ${formatDuration(this.prevDuration)})`
+            `Plot finished, resetting state (duration: ${formatDuration(this.prevDuration / 1000)})`
           );
           this.state = newState;
           return new PlotTransition(this.state);

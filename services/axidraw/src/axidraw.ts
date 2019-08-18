@@ -25,7 +25,7 @@ export class Axidraw {
   }
 
   public get isUp(): boolean {
-    return this.privateStatus === AxidrawStatus.UP;
+    return this.privateStatus === AxidrawStatus.UP || this.privateStatus === AxidrawStatus.PLOTTING;
   }
 
   constructor(com: string) {

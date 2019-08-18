@@ -111,10 +111,10 @@ app.post(
       });
     } else {
       // If the state machine allows it, proceed with plotting
+      // Set the svg from the request
+      fsm.svg = svg;
       const transition = fsm.transition(PlotState.PLOTTING);
       if (prev !== transition.state) {
-        // Set the svg from the request
-        fsm.svg = svg;
         transition.watch.then(() => {
           // When plotting has finished, go back to the RAISED state
           fsm.transition(PlotState.RAISED);
