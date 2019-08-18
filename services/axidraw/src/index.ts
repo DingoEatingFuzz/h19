@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+import discoverAxidraws from "./axidraw";
 import log from "./logger";
 import PlotMachine from "./plot-machine";
 import { PlotState } from "./plot-state";
@@ -7,10 +8,7 @@ import PlotTransition from "./plot-transition";
 const app = express();
 const port = 8080;
 
-const fsms: { [s: string]: PlotMachine } = {
-  plot1: new PlotMachine("plot1"),
-  plot2: new PlotMachine("plot2")
-};
+const fsms: { [s: string]: PlotMachine } = {};
 
 const fsmHandler = (handler: (fsm: PlotMachine, req: Request, res: Response) => void) => (
   req: Request,
@@ -26,7 +24,7 @@ const fsmHandler = (handler: (fsm: PlotMachine, req: Request, res: Response) => 
 };
 
 app.get("/", (req, res) => {
-  res.send("Hello world");
+  res.json({ healthy: true, message: "I am a plotter server" });
 });
 
 app.get(
@@ -85,6 +83,15 @@ app.post("/*", (req, res) => {
   res.json({ status: 404, error: "Endpoint not found" });
 });
 
-app.listen(port, () => {
-  log(`Server started at http://localhost:${port}`);
+log(`Looking for axidraws...`);
+discoverAxidraws().then((axidraws) => {
+  axidraws.forEach((axidraw, index) => {
+    const id = `plot${index + 1}`;
+    log(`Registering PlotMachine: ${id}`);
+    fsms[id] = new PlotMachine(id, axidraw);
+  });
+
+  app.listen(port, () => {
+    log(`Server started at http://localhost:${port}`);
+  });
 });
