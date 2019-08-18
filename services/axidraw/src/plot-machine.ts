@@ -1,3 +1,4 @@
+import { Axidraw } from "./axidraw";
 import { default as _log } from "./logger";
 import { PlotState } from "./plot-state";
 import PlotTransition from "./plot-transition";
@@ -10,9 +11,11 @@ const wait = (ms: number) =>
 export default class PlotMachine {
   public readonly id: string;
   private state: PlotState = PlotState.IDLE;
+  private axidraw: Axidraw;
 
-  constructor(id: string) {
+  constructor(id: string, axidraw: Axidraw) {
     this.id = id;
+    this.axidraw = axidraw;
   }
 
   public getState(): PlotState {
@@ -28,12 +31,14 @@ export default class PlotMachine {
 
       case PlotState.RAISED:
         this.log("Lowering pen");
+        this.axidraw.lowerPen();
         this.state = PlotState.LOWERED;
         return new PlotTransition(this.state);
 
       case PlotState.LOWERED:
       case PlotState.FREE:
         this.log("Raising pen");
+        this.axidraw.raisePen();
         this.state = PlotState.RAISED;
         return new PlotTransition(this.state);
     }
@@ -50,6 +55,7 @@ export default class PlotMachine {
 
       case PlotState.RAISED:
         this.log("Releasing motors");
+        this.axidraw.disableMotors();
         this.state = PlotState.FREE;
         return new PlotTransition(this.state);
     }
