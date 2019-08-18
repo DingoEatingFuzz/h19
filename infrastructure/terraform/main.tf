@@ -22,6 +22,10 @@ module "hashistack" {
   image = "packer-1565598234"
 }
 
+resource "google_storage_bucket" "svg_bucket" {
+  name = "h19-plotter-svgs"
+}
+
 output "IP_Addresses" {
   value = <<CONFIGURATION
 To connect, add your private key and SSH into any client or server with
