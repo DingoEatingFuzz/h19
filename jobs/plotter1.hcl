@@ -8,11 +8,16 @@ job "plotter1" {
   }
 
   group "plot" {
+    restart {
+      attempts = 0
+      mode     = "fail"
+    }
+
     task "plot" {
       driver = "docker"
 
       config {
-        image = "dingoeatingfuzz/h19-plot:0.0.3"
+        image = "dingoeatingfuzz/h19-plot:0.1.1"
       }
 
       dispatch_payload {
@@ -22,6 +27,7 @@ job "plotter1" {
       env {
         CONSUL_HOST = "hashi.plot.technology"
         CONSUL_PORT = "8500"
+        PLOTTER_ID  = "plot1"
       }
 
       resources {
