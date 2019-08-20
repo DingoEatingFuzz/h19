@@ -19,7 +19,7 @@ module "hashistack" {
   root_block_device_size = 16
   client_block_size = 50
   whitelist_ip = "0.0.0.0/0"
-  image = "packer-1565598234"
+  image = "packer-1566194592"
 }
 
 resource "google_storage_bucket" "svg_bucket" {

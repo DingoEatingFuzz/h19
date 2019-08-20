@@ -72,7 +72,7 @@ resource "google_compute_firewall" "server_lb" {
 
   allow {
     protocol = "tcp"
-    ports = ["4646", "8500", "8200", "9998", "9999"]
+    ports = ["4646", "8500", "8200", "8201", "9998", "9999"]
   }
 }
 
@@ -83,7 +83,7 @@ resource "google_compute_firewall" "primary" {
 
   allow {
     protocol = "tcp"
-    ports = ["22", "4646", "4647", "4648", "8200", "8300-8302", "8500-8502", "8600", "9998", "21000-21255"]
+    ports = ["22", "4646", "4647", "4648", "8200", "8201", "8300-8302", "8500-8502", "8600", "9998", "21000-21255"]
   }
 }
 
@@ -241,35 +241,6 @@ resource "google_compute_instance_template" "client_template" {
     scopes = ["compute-rw", "storage-ro"]
   }
 }
-
-# resource "google_compute_instance" "client" {
-#   name         = "${var.name}-client-${count.index}"
-#   machine_type = "${var.client_machine_type}"
-#   count        = "${var.client_count}"
-
-#   metadata_startup_script = "${data.template_file.user_data_client.rendered}"
-#   allow_stopping_for_update = true
-
-#   tags = [ "${var.name}-client-${count.index}", "${lookup(var.retry_join, "tag_value")}" ]
-
-#   depends_on             = ["google_compute_instance_group_manager.server_group"]
-
-#   boot_disk {
-#     initialize_params {
-#       image = "${var.image}"
-#       size = "${var.client_block_size}"
-#     }
-#   }
-
-#   network_interface {
-#     network = "${google_compute_network.default.name}"
-#     access_config {}
-#   }
-
-#   service_account {
-#     scopes = ["compute-rw", "storage-ro"]
-#   }
-# }
 
 resource "google_compute_instance_group_manager" "client_group" {
   name = "${var.name}-client-igm"
