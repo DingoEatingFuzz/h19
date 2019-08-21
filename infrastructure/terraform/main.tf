@@ -1,5 +1,10 @@
+variable "gcp_credentials" {
+  type = string
+  description = "The account.json file for the GCP account"
+}
+
 provider "google" {
-  credentials = "${file("account.json")}"
+  credentials = var.gcp_credentials
   project = "hashiconf19"
   region = "us-west1"
   zone = "us-west1-b"
