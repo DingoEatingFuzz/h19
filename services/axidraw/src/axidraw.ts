@@ -75,7 +75,7 @@ export class Axidraw {
   public async raisePen(): Promise<boolean> {
     if (this.isUp) {
       await this.enableMotors();
-      await this.ebb.setPenHeight(Device.Axidraw.penPctToPos(50), 1000);
+      await this.ebb.setPenHeight(Device.Axidraw.penPctToPos(30), 1000);
       return true;
     }
     return false;
@@ -84,7 +84,7 @@ export class Axidraw {
   public async lowerPen(): Promise<boolean> {
     if (this.isUp) {
       await this.enableMotors();
-      await this.ebb.setPenHeight(Device.Axidraw.penPctToPos(70), 1000);
+      await this.ebb.setPenHeight(Device.Axidraw.penPctToPos(80), 1000);
       return true;
     }
     return false;
