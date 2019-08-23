@@ -125,6 +125,8 @@ export default class PlotMachine {
       case PlotState.RAISED:
         if (this.state === PlotState.PLOTTING) {
           if (this.activeRequest) {
+            // Remove the request from the queue
+            this.plotRequests.splice(this.plotRequests.indexOf(this.activeRequest), 1);
             this.activeRequest.res.sseSend({ done: true, duration: this.prevDuration });
           }
           this.log(
@@ -148,8 +150,6 @@ export default class PlotMachine {
         this.internalPlotKey = uuid();
         this.log(`Queued plot job accepted: ${nextRequest.ts} (key: ${this.internalPlotKey})`);
         nextRequest.res.sseSend({ proceed: this.internalPlotKey });
-        // Remove the request from the queue
-        this.plotRequests.splice(this.plotRequests.indexOf(nextRequest), 1);
         this.activeRequest = nextRequest;
         return nextRequest;
       } else {
