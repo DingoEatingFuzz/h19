@@ -1,4 +1,4 @@
-job "plotter1" {
+job "plotter2" {
   datacenters = ["dc1"]
 
   type = "batch"
@@ -27,7 +27,7 @@ job "plotter1" {
       env {
         CONSUL_HOST = "hashi.plot.technology"
         CONSUL_PORT = "8500"
-        PLOTTER_ID  = "plot1"
+        PLOTTER_ID  = "plot2"
       }
 
       resources {
