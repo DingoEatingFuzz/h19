@@ -14,7 +14,7 @@ const planOptions: PlanOptions = {
   paperSize: PaperSize.standard.A6.landscape,
   pathJoinRadius: 0.5,
   penDownHeight: 60,
-  penUpHeight: 50,
+  penUpHeight: 30,
   pointJoinRadius: 0,
   selectedLayers: new Set(),
 

@@ -86,7 +86,7 @@ consul.kv.get("axidraw_address").then(
     };
 
     es.onerror = (err) => {
-      log(`EventSource Error: ${err}`);
+      log(`EventSource Error: ${err.message}`);
       process.exit(1);
     };
   },
@@ -106,25 +106,25 @@ function sendPlot(address: string, key: string) {
   const filename = `./${PLOTTER_ID}_${config.product}_${config.ts}.svg`;
   fs.writeFileSync(filename, Buffer.from(svg));
 
-  log("Uploading SVG to Google Cloud Storage...");
-  storage
-    .bucket(BUCKET)
-    .upload(filename, {
-      gzip: true
-    })
-    .then(
-      ([file, meta]) => {
-        log("SVG uploaded to Google Cloud Storage");
-        log("baseUrl: " + file.baseUrl);
-        log("name: " + file.name);
-        log("bucket: " + file.bucket);
-        log("id: " + file.id);
-        log(meta);
-      },
-      (err) => {
-        log(`Failed to upload SVG to Google Cloud Storage: ${err}`);
-      }
-    );
+  // log("Uploading SVG to Google Cloud Storage...");
+  // storage
+  //   .bucket(BUCKET)
+  //   .upload(filename, {
+  //     gzip: true
+  //   })
+  //   .then(
+  //     ([file, meta]) => {
+  //       log("SVG uploaded to Google Cloud Storage");
+  //       log("baseUrl: " + file.baseUrl);
+  //       log("name: " + file.name);
+  //       log("bucket: " + file.bucket);
+  //       log("id: " + file.id);
+  //       log(meta);
+  //     },
+  //     (err) => {
+  //       log(`Failed to upload SVG to Google Cloud Storage: ${err}`);
+  //     }
+  //   );
 
   log("Updating Consul KV with new SVG address...");
 

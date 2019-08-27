@@ -84,7 +84,7 @@ export class Axidraw {
   public async lowerPen(): Promise<boolean> {
     if (this.isUp) {
       await this.enableMotors();
-      await this.ebb.setPenHeight(Device.Axidraw.penPctToPos(80), 1000);
+      await this.ebb.setPenHeight(Device.Axidraw.penPctToPos(60), 1000);
       return true;
     }
     return false;
@@ -171,7 +171,7 @@ async function waitForAxidraws(timeout: number = 30000): Promise<string[]> {
     const axidraws = await EBB.list();
     if (axidraws.length) {
       clearTimeout(clearEject);
-      return axidraws;
+      return axidraws.sort();
     }
     await wait(1000);
   }
