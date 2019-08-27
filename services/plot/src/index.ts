@@ -86,7 +86,7 @@ consul.kv.get("axidraw_address").then(
     };
 
     es.onerror = (err) => {
-      log(`EventSource Error: ${err.message}`);
+      log(`EventSource Error: ${err.data}`);
       process.exit(1);
     };
   },
