@@ -16,7 +16,9 @@ const planOptions: PlanOptions = {
   penDownHeight: 60,
   penUpHeight: 30,
   pointJoinRadius: 0,
-  selectedLayers: new Set(),
+
+  // Use black strokes, *all* black strokes
+  selectedLayers: new Set(["#000000", "#000", "rgb(0,0,0)", "rgb(0, 0, 0)"]),
 
   penDownAcceleration: 200,
   penDownCorneringFactor: 0.127,
