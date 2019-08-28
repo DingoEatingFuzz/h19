@@ -13,3 +13,5 @@ services/plot/dist
 art/node_modules
 art/dist
 art/.cache
+
+data/node_modules
