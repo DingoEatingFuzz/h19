@@ -39,7 +39,18 @@ function getlog(repo, name) {
     repo.log(
       {
         "--after": "2018/10/24", // HashiConf 2018
-        "--reverse": true
+        "--stat": 1000,
+        "--reverse": true,
+        format: {
+          hash: "%H",
+          date: "%ai",
+          message: "%s",
+          refs: "%D",
+          body: "%b",
+          author_name: "%aN",
+          author_email: "%ae",
+          parents: "%P"
+        }
       },
       (err, log) => {
         if (err) {
@@ -59,10 +70,16 @@ function write(file, log) {
   fs.writeFileSync(`./exports/${file}.json`, JSON.stringify(log));
 }
 
-function splitRefs(commit) {
+function structure(commit) {
+  // Split refs into an array
   commit.refs = commit.refs.split(", ").filter(Boolean);
   commit.tag = commit.refs.find((ref) => ref.startsWith("tag: "));
+
+  // Treat tag as first class
   if (commit.tag) {
     commit.tag = commit.tag.substr("tag: ".length);
   }
+
+  // Split parents as an array
+  commit.parents = commit.parents.split(" ").filter(Boolean);
 }
