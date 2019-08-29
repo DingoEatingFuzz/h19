@@ -3,12 +3,28 @@ import { SVGRenderer } from "three/examples/jsm/renderers/SVGRenderer";
 import "d3-time";
 import "d3-time-format";
 import { scaleLinear, scaleTime } from "d3-scale";
+import VagrantData from "./data/vagrant.json";
+import PackerData from "./data/packer.json";
+import TerraformData from "./data/terraform.json";
+import VaultData from "./data/vault.json";
+import ConsulData from "./data/consul.json";
 import NomadData from "./data/nomad.json";
 
-console.log("Did it work?");
-console.log(NomadData);
+normalizeData(VagrantData);
+normalizeData(PackerData);
+normalizeData(TerraformData);
+normalizeData(VaultData);
+normalizeData(ConsulData);
+normalizeData(NomadData);
 
-window.nd = NomadData;
+const dataMap = {
+  vagrant: VagrantData,
+  packer: PackerData,
+  terraform: TerraformData,
+  vault: VaultData,
+  consul: ConsulData,
+  nomad: NomadData
+};
 
 function Segment(x, y, z) {
   this._prev = [x, y, z];
@@ -50,10 +66,17 @@ function bbox() {
   return box;
 }
 
+function authorToNumber(author) {
+  // 0-25 based on first letter of name
+  var char = author[0];
+  if (!/[a-zA-Z]/.test(char)) return 13; // Neutral value
+  return parseInt(char, 36) - 10;
+}
+
 function gitTree(data, dimensions) {
   const marked = [];
   const merges = data.all.filter((c) => c.parents.length === 2);
-  const segments = [];
+  let segments = [];
   const tags = [];
 
   // X => Date
@@ -61,21 +84,32 @@ function gitTree(data, dimensions) {
   // Z => Files modified
   var X = scaleTime()
     .domain([data.all[0].date, data.all[data.all.length - 1].date])
-    .range([0, dimensions.x]);
+    .range([0, dimensions.x])
+    .clamp(true);
   var Y = scaleLinear()
     .domain([300, -300])
+    .range([-dimensions.y / 50, dimensions.y / 50])
+    .clamp(true);
+  var YY = scaleLinear()
+    .domain([0, 15])
     .range([-dimensions.y / 50, dimensions.y / 50])
     .clamp(true);
   var Z = scaleLinear()
     .domain([0, 30])
     .range([-dimensions.z / 150, dimensions.z / 50])
     .clamp(true);
+  var ZZ = scaleLinear()
+    .domain([0, 25])
+    .range([-dimensions.z / 200, dimensions.z / 200]);
 
   const commitToCoords = (commit, prev = new THREE.Vector3(0, 0, 0)) => {
     return new THREE.Vector3(
       X(commit.date),
-      prev.y + Y(commit.diff ? commit.diff.insertions - commit.diff.deletions : 0),
-      prev.z + (commit.diff ? Z(commit.diff.files.length) : 0)
+      prev.y +
+        (commit.diff
+          ? Y(commit.diff.insertions - commit.diff.deletions)
+          : YY(parseInt(commit.hash[0], 16))),
+      prev.z + (commit.diff ? Z(commit.diff.files.length) : ZZ(authorToNumber(commit.author_name)))
     );
   };
 
@@ -108,8 +142,8 @@ function gitTree(data, dimensions) {
     prev = coords;
   }
 
-  // The line of merge commits, is it necessary?
-  // segments.push(main);
+  // The line of merge commits
+  segments.push(main);
 
   const v1 = new THREE.Vector3(...main.vertices.slice(0, 3));
   const v2 = new THREE.Vector3(...main.vertices.slice(main.vertices.length - 3));
@@ -122,7 +156,7 @@ function gitTree(data, dimensions) {
   return [axis, group];
 }
 
-function draw(renderer, seed) {
+function draw(renderer, product = "vagrant", rotation = 0) {
   const camera = new THREE.PerspectiveCamera(33, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.z = 10;
 
@@ -131,13 +165,14 @@ function draw(renderer, seed) {
 
   scene.add(bbox());
 
-  normalizeData(NomadData);
-  const [axis, viz] = gitTree(NomadData, new THREE.Vector3(2, 2, 2));
+  const data = dataMap[product] || VagrantData;
+  const [axis, viz] = gitTree(data, new THREE.Vector3(2, 2, 2));
 
   viz.scale.setScalar(2);
-  viz.position.x = -1;
-  viz.position.y = 1;
+  viz.position.x = -1.8;
+  viz.position.y = 0.8;
   viz.rotation.z = -Math.PI / 4;
+  viz.rotateOnAxis(axis, rotation);
 
   scene.add(viz);
 
@@ -167,16 +202,31 @@ function normalizeData(data) {
 document.addEventListener("DOMContentLoaded", function() {
   const renderer = new SVGRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
+
   document.body.appendChild(renderer.domElement);
 
-  var [axis, cluster, scene, camera] = draw(renderer);
-  requestAnimationFrame(function rotate() {
-    cluster.rotateOnAxis(axis, 0.01);
-    renderer.render(scene, camera);
-    requestAnimationFrame(rotate);
-  });
+  const params = new URLSearchParams(location.search);
+  const angle = parseFloat(params.get("seed") || 0, 10) * Math.PI * 2;
+  const product = params.get("product");
+  var [axis, cluster, scene, camera] = draw(renderer, product, angle);
+
+  renderer.render(scene, camera);
+
+  const shouldAnimate = params.has("animate");
+  if (shouldAnimate) {
+    requestAnimationFrame(function rotate() {
+      cluster.rotateOnAxis(axis, 0.03);
+      renderer.render(scene, camera);
+      requestAnimationFrame(rotate);
+    });
+  }
 
   document.body.addEventListener("click", function() {
-    console.log(serialize(document.getElementsByTagName("svg")[0]));
+    console.log(extractSVG());
   });
 });
+
+// Provide a hook for puppeteer to call to easily get the SVG
+window.extractSVG = function() {
+  return serialize(document.getElementsByTagName("svg")[0]);
+};
