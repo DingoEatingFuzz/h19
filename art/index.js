@@ -1,12 +1,21 @@
 import * as THREE from "three";
 import { SVGRenderer } from "three/examples/jsm/renderers/SVGRenderer";
+import "d3-time";
+import "d3-time-format";
+import { scaleLinear, scaleTime } from "d3-scale";
+import NomadData from "./data/nomad.json";
+
+console.log("Did it work?");
+console.log(NomadData);
+
+window.nd = NomadData;
 
 function Segment(x, y, z) {
   this._prev = [x, y, z];
   this.vertices = [];
 
   this.lineTo = function(x, y, z) {
-    if (x.x) {
+    if (x.x != null) {
       z = x.z;
       y = x.y;
       x = x.x;
@@ -41,23 +50,76 @@ function bbox() {
   return box;
 }
 
-function lightning() {
-  var start = new THREE.Vector3(0, 0, 0);
-  var latest = start;
-  var bounds = new Segment(start.x, start.y, start.z);
+function gitTree(data, dimensions) {
+  const marked = [];
+  const merges = data.all.filter((c) => c.parents.length === 2);
+  const segments = [];
+  const tags = [];
 
-  function d(n, invert = false) {
-    return n + (Math.random() * 0.1 - 0.01) * (invert ? -1 : 1);
+  // X => Date
+  // Y => Insertions v. Deletions
+  // Z => Files modified
+  var X = scaleTime()
+    .domain([data.all[0].date, data.all[data.all.length - 1].date])
+    .range([0, dimensions.x]);
+  var Y = scaleLinear()
+    .domain([300, -300])
+    .range([-dimensions.y / 50, dimensions.y / 50])
+    .clamp(true);
+  var Z = scaleLinear()
+    .domain([0, 30])
+    .range([-dimensions.z / 150, dimensions.z / 50])
+    .clamp(true);
+
+  const commitToCoords = (commit, prev = new THREE.Vector3(0, 0, 0)) => {
+    return new THREE.Vector3(
+      X(commit.date),
+      prev.y + Y(commit.diff ? commit.diff.insertions - commit.diff.deletions : 0),
+      prev.z + (commit.diff ? Z(commit.diff.files.length) : 0)
+    );
+  };
+
+  const walkTree = (d, m, p, commit) => {
+    let current = commit;
+    let prev = p;
+    const line = new Segment(prev.x, prev.y, prev.z);
+    while (true) {
+      if (!current) break;
+      if (m.includes(current)) break;
+      const coords = commitToCoords(current, prev);
+      line.lineTo(coords);
+      prev = coords;
+      m.push(current);
+      current = d.all[data.hashmap[current.parents[0]]];
+    }
+    if (line.vertices.length) return line;
+  };
+
+  const main = new Segment(0, 0, 0);
+  let prev;
+  for (let merge of merges) {
+    marked.push(merge, prev);
+    const coords = commitToCoords(merge, prev);
+    main.lineTo(coords);
+    const left = walkTree(data, marked, coords, data.all[data.hashmap[merge.parents[0]]]);
+    const right = walkTree(data, marked, coords, data.all[data.hashmap[merge.parents[1]]]);
+    if (left) segments.push(left);
+    if (right) segments.push(right);
+    prev = coords;
   }
 
-  while (latest.distanceTo(start) < 2) {
-    latest = new THREE.Vector3(d(latest.x), d(latest.y, true), d(latest.z));
-    bounds.lineTo(latest);
-    if (bounds.vertices.length > 600) break;
-  }
+  // The line of merge commits, is it necessary?
+  // segments.push(main);
 
-  var shape = segmentToThree(bounds);
-  return shape;
+  const v1 = new THREE.Vector3(...main.vertices.slice(0, 3));
+  const v2 = new THREE.Vector3(...main.vertices.slice(main.vertices.length - 3));
+  const axis = new THREE.Vector3().subVectors(v2, v1).normalize();
+
+  const group = new THREE.Group();
+  segments.forEach((s, i) => {
+    group.add(segmentToThree(s));
+  });
+  return [axis, group];
 }
 
 function draw(renderer, seed) {
@@ -69,26 +131,18 @@ function draw(renderer, seed) {
 
   scene.add(bbox());
 
-  var lightningCluster = new THREE.Group();
-  lightningCluster.add(lightning());
-  lightningCluster.add(lightning());
-  lightningCluster.add(lightning());
-  lightningCluster.add(lightning());
-  lightningCluster.add(lightning());
-  lightningCluster.add(lightning());
-  lightningCluster.add(lightning());
-  lightningCluster.add(lightning());
-  lightningCluster.add(lightning());
-  lightningCluster.add(lightning());
+  normalizeData(NomadData);
+  const [axis, viz] = gitTree(NomadData, new THREE.Vector3(2, 2, 2));
 
-  lightningCluster.scale.setScalar(2.5);
-  lightningCluster.position.x = -2;
-  lightningCluster.position.y = 2;
+  viz.scale.setScalar(2);
+  viz.position.x = -1;
+  viz.position.y = 1;
+  viz.rotation.z = -Math.PI / 4;
 
-  scene.add(lightningCluster);
+  scene.add(viz);
 
   renderer.render(scene, camera);
-  return [lightningCluster, scene, camera];
+  return [axis, viz, scene, camera];
 }
 
 function serialize(svg) {
@@ -104,14 +158,20 @@ function inlineStroke(el) {
   el.children && Array.from(el.children).forEach(inlineStroke);
 }
 
+function normalizeData(data) {
+  data.all.forEach((commit) => {
+    commit.date = new Date(commit.date);
+  });
+}
+
 document.addEventListener("DOMContentLoaded", function() {
   const renderer = new SVGRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  var [cluster, scene, camera] = draw(renderer);
+  var [axis, cluster, scene, camera] = draw(renderer);
   requestAnimationFrame(function rotate() {
-    cluster.rotateOnAxis(new THREE.Vector3(1, -1, 1).normalize(), 0.01);
+    cluster.rotateOnAxis(axis, 0.01);
     renderer.render(scene, camera);
     requestAnimationFrame(rotate);
   });
