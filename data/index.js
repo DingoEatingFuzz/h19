@@ -56,7 +56,13 @@ function getlog(repo, name) {
         if (err) {
           reject(err);
         } else {
-          log.all.forEach(splitRefs);
+          log.all.forEach(structure);
+          // Create a hashmap to traverse parents to avoid linear scans of the all
+          // commits array.
+          log.hashmap = log.all.reduce((hash, commit, idx) => {
+            hash[commit.hash] = idx;
+            return hash;
+          }, {});
           console.log(`Success! ${name} get. (${log.total} commits)`);
           write(name, log);
           resolve(log);
