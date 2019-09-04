@@ -31,7 +31,7 @@ const dataMap = {
 const pos = (scale, x, y, r) => ({ scale, x, y, r });
 const positions = {
   vagrant: pos(2, -1.8, 0.8, -Math.PI / 4),
-  packer: pos(2, -1.8, 0.8, -Math.PI / 4),
+  packer: pos(1.33, -1.5, 1.5, -Math.PI / 4),
   terraform: pos(2, -1.8, 0.8, -Math.PI / 4),
   vault: pos(2, -1.8, 0.8, -Math.PI / 4),
   consul: pos(2, -1.8, 0.8, -Math.PI / 4),
@@ -286,9 +286,6 @@ window.onload = () => {
     console.log(extractSVG());
   });
 };
-
-// document.addEventListener("DOMContentLoaded", function() {
-// });
 
 // Provide a hook for puppeteer to call to easily get the SVG
 window.extractSVG = function() {
