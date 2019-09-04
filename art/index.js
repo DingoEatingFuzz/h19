@@ -10,6 +10,11 @@ import VaultData from "./data/vault.json";
 import ConsulData from "./data/consul.json";
 import NomadData from "./data/nomad.json";
 
+import VagrantFrame from "./frames/vagrant.svg";
+import PackerFrame from "./frames/packer.svg";
+import TerraformFrame from "./frames/terraform.svg";
+import VaultFrame from "./frames/vault.svg";
+import ConsulFrame from "./frames/consul.svg";
 import NomadFrame from "./frames/nomad.svg";
 
 normalizeData(VagrantData);
@@ -39,6 +44,11 @@ const positions = {
 };
 
 const frames = {
+  vagrant: VagrantFrame,
+  packer: PackerFrame,
+  terraform: TerraformFrame,
+  vault: VaultFrame,
+  consul: ConsulFrame,
   nomad: NomadFrame
 };
 
