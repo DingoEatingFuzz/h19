@@ -73,9 +73,25 @@ function authorToNumber(author) {
   return parseInt(char, 36) - 10;
 }
 
-function gitTree(data, dimensions) {
+function sample(count, list) {
+  const toRemove = list.length - count;
+  const pace = list.length / toRemove;
+  const newList = list.slice();
+
+  for (let i = 1; i <= newList.length; i += pace) {
+    newList.splice(Math.floor(i), 1);
+    i -= 1;
+  }
+
+  return newList;
+}
+
+function gitTree(data, dimensions, len) {
   const marked = [];
-  const merges = data.all.filter((c) => c.parents.length === 2);
+  let merges = data.all.filter((c) => c.parents.length === 2);
+  if (len) {
+    merges = sample(len, merges);
+  }
   let segments = [];
   const tags = [];
 
@@ -156,8 +172,13 @@ function gitTree(data, dimensions) {
   return [axis, group];
 }
 
-function draw(renderer, product = "vagrant", rotation = 0) {
-  const camera = new THREE.PerspectiveCamera(33, window.innerWidth / window.innerHeight, 0.1, 100);
+function draw(renderer, product = "vagrant", rotation = 0, len) {
+  const camera = new THREE.PerspectiveCamera(
+    33,
+    document.body.clientWidth / document.body.clientHeight,
+    0.1,
+    100
+  );
   camera.position.z = 10;
 
   const scene = new THREE.Scene();
@@ -199,16 +220,39 @@ function normalizeData(data) {
   });
 }
 
-document.addEventListener("DOMContentLoaded", function() {
+window.onload = () => {
+  console.log(document.readyState);
   const renderer = new SVGRenderer();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(document.body.clientWidth, document.body.clientHeight);
+  console.log(`W: ${document.body.clientWidth}, H: ${document.body.clientHeight}`);
 
   document.body.appendChild(renderer.domElement);
 
   const params = new URLSearchParams(location.search);
   const angle = parseFloat(params.get("seed") || 0, 10) * Math.PI * 2;
   const product = params.get("product");
-  var [axis, cluster, scene, camera] = draw(renderer, product, angle);
+  const maxLength = params.get("len");
+  var [axis, cluster, scene, camera] = draw(renderer, product, angle, maxLength);
+
+  fetch(frames[product] || NomadFrame)
+    .then((res) => res.text())
+    .then((svg) => {
+      const bbox = document.getElementsByTagName("svg")[0].children[1].getBBox();
+      const el = document.createElement("div");
+      el.setAttribute(
+        "style",
+        [
+          `width:${bbox.width.toFixed(2)}px`,
+          `height:${bbox.height.toFixed(2)}px`,
+          `position:fixed`,
+          `top:50%`,
+          `left:50%`,
+          `transform:translate(-50%,-50%)`
+        ].join(";")
+      );
+      el.innerHTML = svg;
+      document.body.appendChild(el);
+    });
 
   renderer.render(scene, camera);
 
@@ -224,7 +268,10 @@ document.addEventListener("DOMContentLoaded", function() {
   document.body.addEventListener("click", function() {
     console.log(extractSVG());
   });
-});
+};
+
+// document.addEventListener("DOMContentLoaded", function() {
+// });
 
 // Provide a hook for puppeteer to call to easily get the SVG
 window.extractSVG = function() {
