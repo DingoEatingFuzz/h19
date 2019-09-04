@@ -100,9 +100,14 @@ function authorToNumber(author) {
 }
 
 function sample(count, list) {
+  const newList = list.slice();
+
+  if (count > list.length) {
+    return newList;
+  }
+
   const toRemove = list.length - count;
   const pace = list.length / toRemove;
-  const newList = list.slice();
 
   for (let i = 1; i <= newList.length; i += pace) {
     newList.splice(Math.floor(i), 1);
