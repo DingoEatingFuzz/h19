@@ -34,7 +34,7 @@ const positions = {
   packer: pos(1.33, -1.5, 1.5, -Math.PI / 4),
   terraform: pos(1.8, -1.5, 0.8, -0.7),
   vault: pos(1.9, -1.3, 1.5, -1.2),
-  consul: pos(2, -1.8, 0.8, -Math.PI / 4),
+  consul: pos(2, -1.5, 1.2, -0.85),
   nomad: pos(1.8, -1.3, 1.3, -0.6)
 };
 
