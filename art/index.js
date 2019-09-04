@@ -10,6 +10,8 @@ import VaultData from "./data/vault.json";
 import ConsulData from "./data/consul.json";
 import NomadData from "./data/nomad.json";
 
+import NomadFrame from "./frames/nomad.svg";
+
 normalizeData(VagrantData);
 normalizeData(PackerData);
 normalizeData(TerraformData);
@@ -24,6 +26,20 @@ const dataMap = {
   vault: VaultData,
   consul: ConsulData,
   nomad: NomadData
+};
+
+const pos = (scale, x, y, r) => ({ scale, x, y, r });
+const positions = {
+  vagrant: pos(2, -1.8, 0.8, -Math.PI / 4),
+  packer: pos(2, -1.8, 0.8, -Math.PI / 4),
+  terraform: pos(2, -1.8, 0.8, -Math.PI / 4),
+  vault: pos(2, -1.8, 0.8, -Math.PI / 4),
+  consul: pos(2, -1.8, 0.8, -Math.PI / 4),
+  nomad: pos(1.8, -1.3, 1.3, -0.6)
+};
+
+const frames = {
+  nomad: NomadFrame
 };
 
 function Segment(x, y, z) {
@@ -187,12 +203,13 @@ function draw(renderer, product = "vagrant", rotation = 0, len) {
   scene.add(bbox());
 
   const data = dataMap[product] || VagrantData;
-  const [axis, viz] = gitTree(data, new THREE.Vector3(2, 2, 2));
+  const [axis, viz] = gitTree(data, new THREE.Vector3(2, 2, 2), len);
+  const { scale, x, y, r } = positions[product || "vagrant"];
 
-  viz.scale.setScalar(2);
-  viz.position.x = -1.8;
-  viz.position.y = 0.8;
-  viz.rotation.z = -Math.PI / 4;
+  viz.scale.setScalar(scale);
+  viz.position.x = x;
+  viz.position.y = y;
+  viz.rotation.z = r;
   viz.rotateOnAxis(axis, rotation);
 
   scene.add(viz);
