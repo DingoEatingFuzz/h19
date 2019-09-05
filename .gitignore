@@ -14,5 +14,7 @@ services/plot/art
 art/node_modules
 art/dist
 art/.cache
+art/exports/*
+art/screenshots/*
 
 data/node_modules
