@@ -86,27 +86,10 @@ export default class PlotMachine {
 
   public double(): PlotTransition {
     switch (this.state) {
-      case PlotState.IDLE:
       case PlotState.PLOTTING:
       case PlotState.LOWERED:
       case PlotState.FREE:
         this.log(`Action "double" has no transition for state "${this.state}"`);
-        return new PlotTransition(this.state);
-
-      case PlotState.RAISED:
-        this.log("Releasing motors");
-        this.axidraw.disableMotors();
-        this.state = PlotState.FREE;
-        return new PlotTransition(this.state);
-    }
-  }
-
-  public long(): PlotTransition {
-    switch (this.state) {
-      case PlotState.PLOTTING:
-      case PlotState.LOWERED:
-      case PlotState.FREE:
-        this.log(`Action "long" has no transition for state "${this.state}"`);
         return new PlotTransition(this.state);
 
       case PlotState.IDLE:
@@ -125,12 +108,29 @@ export default class PlotMachine {
                 `Never heard back from accepted plot job ${this.activeRequest.ts}, canceling job.`
               );
               this.plotRequests.splice(this.plotRequests.indexOf(this.activeRequest), 1);
-              this.long();
+              this.double();
             }
             this.clearMark(mark);
           });
           return new PlotTransition(this.state, plotPollingPromise);
         }
+        return new PlotTransition(this.state);
+    }
+  }
+
+  public long(): PlotTransition {
+    switch (this.state) {
+      case PlotState.PLOTTING:
+      case PlotState.LOWERED:
+      case PlotState.FREE:
+      case PlotState.IDLE:
+        this.log(`Action "long" has no transition for state "${this.state}"`);
+        return new PlotTransition(this.state);
+
+      case PlotState.RAISED:
+        this.log("Releasing motors");
+        this.axidraw.disableMotors();
+        this.state = PlotState.FREE;
         return new PlotTransition(this.state);
     }
   }
