@@ -7,7 +7,7 @@
     "build": "tsc",
     "prestart": "npm run build",
     "start": "node .",
-    "art": "http-server art",
+    "art": "http-server -p 8090 art",
     "plot": "node .",
     "prod": "run-p art plot",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -17,15 +17,19 @@
   "license": "MIT",
   "dependencies": {
     "@google-cloud/storage": "^3.1.0",
+    "@types/puppeteer": "^1.19.1",
+    "@types/seedrandom": "^2.4.28",
     "axios": "^0.19.0",
     "consul": "^0.35.0",
-    "eventsource": "^1.0.7"
+    "eventsource": "^1.0.7",
+    "npm-run-all": "^4.1.5",
+    "puppeteer": "^1.19.0",
+    "seedrandom": "^3.0.3"
   },
   "devDependencies": {
     "@types/consul": "^0.23.33",
     "@types/eventsource": "^1.1.2",
     "@types/node": "^12.7.1",
-    "npm-run-all": "^4.1.5",
     "tslint": "^5.18.0",
     "typescript": "^3.5.3"
   }
