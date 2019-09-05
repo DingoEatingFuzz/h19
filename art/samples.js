@@ -1,5 +1,6 @@
 // A Puppeteer script for generating a bunch of sample outputs from the generative art piece
 const puppeteer = require("puppeteer");
+const fs = require("fs");
 
 const HOST = "http://localhost:1234";
 const PRODUCTS = ["vagrant", "packer", "consul", "terraform", "vault", "nomad"];
@@ -13,8 +14,11 @@ const urlFor = (product, seed) => `${HOST}?product=${product}&seed=${seed}`;
 
   for (product of PRODUCTS) {
     for (let i = 0; i <= 1; i += 1 / 30) {
+      const name = `${product}-${i.toFixed(3)}`;
       await page.goto(urlFor(product, i));
-      await capture(page, `${product}-${i.toFixed(3)}`);
+      await capture(page, name);
+      const svg = await page.evaluate(() => window.extractSVG());
+      fs.writeFileSync(`exports/${name}.svg`, Buffer.from(svg));
     }
   }
 
