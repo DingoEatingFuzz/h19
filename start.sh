@@ -11,5 +11,6 @@ curl -XPUT --data vagrant $CONSUL_HOST/v1/kv/current_product
 echo "Starting nomad jobs..."
 nomad run jobs/fabio.hcl
 nomad run jobs/webhooks.hcl
+nomad run jobs/design.hcl
 nomad run jobs/plotter1.hcl
 nomad run jobs/plotter2.hcl
