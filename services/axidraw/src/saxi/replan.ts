@@ -17,7 +17,14 @@ export default function replan(inPaths: Vec2[][], planOptions: PlanOptions): Pla
   // filter based on the stroke. Rescaling doesn't change the number or order
   // of the paths.
   if (planOptions.selectedLayers.size) {
-    paths = paths.filter((path, i) => planOptions.selectedLayers.has((inPaths[i] as any).stroke));
+    const allSeenStrokes = new Set();
+    paths = paths.filter((path, i) => {
+      allSeenStrokes.add((inPaths[i] as any).stroke);
+      return planOptions.selectedLayers.has((inPaths[i] as any).stroke);
+    });
+    if (!paths.length) {
+      console.log("WARNING! SVG has 0 paths to plot");
+    }
   }
 
   if (planOptions.pointJoinRadius > 0) {

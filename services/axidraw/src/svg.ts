@@ -63,7 +63,9 @@ export class SVG {
     //   [ {x: 1, y: 0}, {x: 1, y:1} ],
     // ]
     const coords = paths.map((line: any) => {
-      return line.points.map(([x, y]: [number, number]) => ({ x, y }));
+      const motion = line.points.map(([x, y]: [number, number]) => ({ x, y }));
+      motion.stroke = line.stroke;
+      return motion;
     });
     return coords;
   }
