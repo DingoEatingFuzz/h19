@@ -2,6 +2,7 @@ import { Response } from "express";
 import uuid from "uuid/v4";
 import { Axidraw } from "./axidraw";
 import { default as _log } from "./logger";
+import Mark from "./mark";
 import { PlotState } from "./plot-state";
 import PlotTransition from "./plot-transition";
 import { formatDuration } from "./saxi/util";
@@ -27,9 +28,16 @@ export default class PlotMachine {
   private internalPlotKey: string;
   private consul: any;
   private prevDuration: number = 0;
+  private marks: Mark[] = [];
+  private isPolling: boolean = false;
 
   private set state(newState: PlotState) {
     this.consul.kv.set(`axidraw_${this.id}_state`, newState.toString());
+    this.marks.forEach((mark) => {
+      if (mark.state !== newState) {
+        mark.changed = true;
+      }
+    });
     this.internalState = newState;
   }
 
@@ -48,7 +56,6 @@ export default class PlotMachine {
     this.state = PlotState.RAISED;
 
     this.clearHeartbeatToken = this.heartbeat();
-    this.pollForPlot();
   }
 
   public getState(): PlotState {
@@ -96,18 +103,42 @@ export default class PlotMachine {
 
   public long(): PlotTransition {
     switch (this.state) {
-      case PlotState.IDLE:
       case PlotState.PLOTTING:
       case PlotState.LOWERED:
       case PlotState.FREE:
         this.log(`Action "long" has no transition for state "${this.state}"`);
         return new PlotTransition(this.state);
 
+      case PlotState.IDLE:
       case PlotState.RAISED:
         this.log("Awaiting new SVG to plot");
         this.state = PlotState.IDLE;
-        return new PlotTransition(this.state, this.pollForPlot());
+        if (!this.isPolling) {
+          const plotPollingPromise = this.pollForPlot();
+          const mark = this.mark();
+          plotPollingPromise.then(async () => {
+            // If the plot machine doesn't transition to Plotting within
+            // 15 seconds, start the polling loop again.
+            await wait(15000);
+            if (!mark.changed) {
+              this.log(
+                `Never heard back from accepted plot job ${this.activeRequest.ts}, canceling job.`
+              );
+              this.plotRequests.splice(this.plotRequests.indexOf(this.activeRequest), 1);
+              this.long();
+            }
+            this.clearMark(mark);
+          });
+          return new PlotTransition(this.state, plotPollingPromise);
+        }
+        return new PlotTransition(this.state);
     }
+  }
+
+  public mark(): Mark {
+    const mark = new Mark(this.state);
+    this.marks.push(mark);
+    return mark;
   }
 
   public transition(newState: PlotState): PlotTransition {
@@ -142,6 +173,7 @@ export default class PlotMachine {
   }
 
   private async pollForPlot(): Promise<IPlotRequest> {
+    this.isPolling = true;
     while (true) {
       if (this.plotRequests.length) {
         // Grab the request with the earliest timestamp
@@ -151,6 +183,7 @@ export default class PlotMachine {
         this.log(`Queued plot job accepted: ${nextRequest.ts} (key: ${this.internalPlotKey})`);
         nextRequest.res.sseSend({ proceed: this.internalPlotKey });
         this.activeRequest = nextRequest;
+        this.isPolling = false;
         return nextRequest;
       } else {
         await wait(1000);
@@ -169,6 +202,13 @@ export default class PlotMachine {
   private stopHeartbeating(): void {
     if (this.clearHeartbeatToken) {
       clearInterval(this.clearHeartbeatToken);
+    }
+  }
+
+  private clearMark(mark: Mark): void {
+    const index = this.marks.indexOf(mark);
+    if (index !== -1) {
+      this.marks.splice(index, 1);
     }
   }
 
