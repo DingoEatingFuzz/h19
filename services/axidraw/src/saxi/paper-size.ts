@@ -34,6 +34,9 @@ export class PaperSize {
     "6x8": new PaperSize(vround(vmul({ x: 6, y: 8 }, 25.4))),
     "5x7": new PaperSize(vround(vmul({ x: 5, y: 7 }, 25.4)))
   };
+
+  public static hashiconf: PaperSize = new PaperSize(vround(vmul({ x: 6.25, y: 6.25 }, 25.4)));
+
   public size: Vec2;
   public constructor(size: Vec2) {
     this.size = size;

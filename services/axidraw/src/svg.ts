@@ -10,8 +10,8 @@ const window = new Window();
 
 const planOptions: PlanOptions = {
   fitToPaper: true,
-  marginMm: 20,
-  paperSize: PaperSize.standard.A6.landscape,
+  marginMm: 0,
+  paperSize: PaperSize.hashiconf.landscape,
   pathJoinRadius: 0.5,
   penDownHeight: 60,
   penUpHeight: 30,
