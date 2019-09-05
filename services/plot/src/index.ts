@@ -10,6 +10,7 @@ import log from "./logger";
 const CONSUL_HOST = process.env.CONSUL_HOST;
 const CONSUL_PORT = process.env.CONSUL_PORT || "8500";
 const PLOTTER_ID = process.env.PLOTTER_ID || "plot1";
+const DESIGN_URL = process.env.DESIGN_URL || "http://localhost:8090";
 const BUCKET = process.env.BUCKET || "h19-plotter-svgs";
 
 const storage = new Storage();
@@ -119,7 +120,7 @@ async function sendPlot(address: string, key: string) {
   let svg = "";
 
   try {
-    await page.goto(`http://localhost:8090?product=${config.product.toLowerCase()}&seed=${rng()}`);
+    await page.goto(`${DESIGN_URL}?product=${config.product.toLowerCase()}&seed=${rng()}`);
     await wait(2000);
     svg = await page.evaluate(() => window.extractSVG());
   } catch (err) {

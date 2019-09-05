@@ -1,6 +1,4 @@
 build:
-	# Copy the art website artifact from source
-	cp -r ../../art/dist ./art
 	npm run build
 	docker build -t dingoeatingfuzz/h19-plot .
 
