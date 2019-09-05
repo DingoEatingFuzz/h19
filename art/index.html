@@ -10,6 +10,21 @@
     height: 100%;
     overflow: hidden;
   }
+  svg {
+    width: 450px;
+    height: 450px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .preview svg {
+    display: none;
+  }
+  .preview .preview {
+    display: block;
+  }
 </style>
 <script src="./index.js"></script>
 <pre id="gitwalk"></pre>

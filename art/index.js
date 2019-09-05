@@ -36,7 +36,7 @@ const dataMap = {
 const pos = (scale, x, y, r) => ({ scale, x, y, r });
 const positions = {
   vagrant: pos(2, -1.4, 1.6, -Math.PI / 4),
-  packer: pos(1.33, -1.5, 1.5, -Math.PI / 4),
+  packer: pos(1.73, -1.5, 1.5, -Math.PI / 4),
   terraform: pos(1.8, -1.5, 0.8, -0.7),
   vault: pos(1.9, -1.3, 1.5, -1.2),
   consul: pos(2, -1.5, 1.2, -0.85),
@@ -160,19 +160,31 @@ function gitTree(data, dimensions, len) {
     );
   };
 
-  const walkTree = (d, m, p, commit) => {
+  const walkTree = (d, m, commit) => {
     let current = commit;
-    let prev = p;
-    const line = new Segment(prev.x, prev.y, prev.z);
+    const commits = [];
     while (true) {
       if (!current) break;
       if (m.includes(current)) break;
-      const coords = commitToCoords(current, prev);
-      line.lineTo(coords);
-      prev = coords;
+      commits.push(current);
       m.push(current);
       current = d.all[data.hashmap[current.parents[0]]];
     }
+    return commits;
+  };
+
+  const plotTree = (d, m, p, commit) => {
+    let prev = p;
+    const line = new Segment(prev.x, prev.y, prev.z);
+    const commits = walkTree(d, m, commit);
+    console.log(commits.length);
+
+    for (let c of sample(50, commits)) {
+      const coords = commitToCoords(c, prev);
+      line.lineTo(coords);
+      prev = coords;
+    }
+
     if (line.vertices.length) return line;
   };
 
@@ -182,8 +194,8 @@ function gitTree(data, dimensions, len) {
     marked.push(merge, prev);
     const coords = commitToCoords(merge, prev);
     main.lineTo(coords);
-    const left = walkTree(data, marked, coords, data.all[data.hashmap[merge.parents[0]]]);
-    const right = walkTree(data, marked, coords, data.all[data.hashmap[merge.parents[1]]]);
+    const left = plotTree(data, marked, coords, data.all[data.hashmap[merge.parents[0]]]);
+    const right = plotTree(data, marked, coords, data.all[data.hashmap[merge.parents[1]]]);
     if (left) segments.push(left);
     if (right) segments.push(right);
     prev = coords;
@@ -204,13 +216,8 @@ function gitTree(data, dimensions, len) {
 }
 
 function draw(renderer, product = "vagrant", rotation = 0, len) {
-  const camera = new THREE.PerspectiveCamera(
-    33,
-    document.body.clientWidth / document.body.clientHeight,
-    0.1,
-    100
-  );
-  camera.position.z = 10;
+  const camera = new THREE.PerspectiveCamera(33, 1, 0.1, 100);
+  camera.position.z = 8.5;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(255, 255, 255);
@@ -233,11 +240,6 @@ function draw(renderer, product = "vagrant", rotation = 0, len) {
   return [axis, viz, scene, camera];
 }
 
-function serialize(svg) {
-  inlineStroke(svg);
-  return svg.outerHTML;
-}
-
 function inlineStroke(el) {
   const presentationTags = ["path", "rect", "circle", "ellipse", "line", "polygon", "polyline"];
   if (presentationTags.includes(el.tagName) && el.style.stroke) {
@@ -255,7 +257,7 @@ function normalizeData(data) {
 window.onload = () => {
   console.log(document.readyState);
   const renderer = new SVGRenderer();
-  renderer.setSize(document.body.clientWidth, document.body.clientHeight);
+  renderer.setSize(450, 450);
   console.log(`W: ${document.body.clientWidth}, H: ${document.body.clientHeight}`);
 
   document.body.appendChild(renderer.domElement);
@@ -269,19 +271,7 @@ window.onload = () => {
   fetch(frames[product] || NomadFrame)
     .then((res) => res.text())
     .then((svg) => {
-      const bbox = document.getElementsByTagName("svg")[0].children[1].getBBox();
       const el = document.createElement("div");
-      el.setAttribute(
-        "style",
-        [
-          `width:${bbox.width.toFixed(2)}px`,
-          `height:${bbox.height.toFixed(2)}px`,
-          `position:fixed`,
-          `top:50%`,
-          `left:50%`,
-          `transform:translate(-50%,-50%)`
-        ].join(";")
-      );
       el.innerHTML = svg;
       document.body.appendChild(el);
     });
@@ -302,7 +292,31 @@ window.onload = () => {
   });
 };
 
+function serialize(svg) {
+  inlineStroke(svg);
+  return svg.outerHTML;
+}
+
 // Provide a hook for puppeteer to call to easily get the SVG
 window.extractSVG = function() {
-  return serialize(document.getElementsByTagName("svg")[0]);
+  const svg1 = document.getElementsByTagName("svg")[0];
+  const svg2 = document.getElementsByTagName("svg")[1];
+  const tmp = svg2.cloneNode(true);
+  tmp.classList.add("preview");
+
+  const container = document.createElement("g");
+  container.setAttribute("transform", "translate(225,225)");
+
+  for (let child of svg1.children) {
+    const newChild = child.cloneNode(true);
+    newChild.setAttribute("transform", "translate(225, 225)");
+    tmp.appendChild(newChild);
+  }
+
+  tmp.appendChild(container);
+
+  document.body.classList.add("preview");
+  document.body.appendChild(tmp);
+
+  return serialize(tmp);
 };
