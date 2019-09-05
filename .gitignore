@@ -9,6 +9,7 @@ services/webhooks/node_modules
 services/webhooks/dist
 services/plot/node_modules
 services/plot/dist
+services/plot/art
 
 art/node_modules
 art/dist

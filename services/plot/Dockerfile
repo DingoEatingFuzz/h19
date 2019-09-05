@@ -4,6 +4,8 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 RUN npm ci --only=production
+RUN npm install --global http-server
 COPY dist dist
+COPY art art
 
-CMD [ "node", "." ]
+CMD [ "npm", "run prod" ]
