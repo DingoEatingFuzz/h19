@@ -21,7 +21,7 @@ job "plotter1" {
       driver = "docker"
 
       config {
-        image = "dingoeatingfuzz/h19-plot:0.2.0"
+        image = "dingoeatingfuzz/h19-plot:0.2.3"
       }
 
       dispatch_payload {
@@ -32,12 +32,15 @@ job "plotter1" {
         CONSUL_HOST = "hashi.plot.technology"
         CONSUL_PORT = "8500"
         PLOTTER_ID  = "plot1"
-        DESIGN_URL  = "http://services.hashi.plot.technology/design"
+        DESIGN_URL  = "http://services.hashi.plot.technology:9999/design"
       }
 
       resources {
-        cpu = 200
-        memory = 128
+        cpu = 1000
+        memory = 1024
+        network {
+          mbits = 500
+        }
       }
     }
   }
