@@ -14,7 +14,7 @@ job "design" {
       driver = "docker"
 
       config {
-        image = "dingoetaingfuzz/h19-design:0.1.0"
+        image = "dingoeatingfuzz/h19-design:0.1.1"
         port_map {
           site = 8080
         }
