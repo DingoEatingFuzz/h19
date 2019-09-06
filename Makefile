@@ -1,5 +1,8 @@
+.EXPORT_ALL_VARIABLES:
+
+CONSUL_HOST=hashi.plot.technology
+
 axidraw:
-	export CONSUL_HOST=hashi.plot.technology
 	cd services/axidraw && npm start
 
 ngrok:
