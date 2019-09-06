@@ -107,10 +107,7 @@ consul.kv.get("axidraw_address").then(
   }
 );
 
-async function sendPlot(address: string, key: string) {
-  // generate an svg
-  log("Generating SVG...");
-
+async function getSVG(): Promise<string> {
   const browser = await Puppeteer.launch({
     // Docker related chrome flags
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
@@ -119,14 +116,29 @@ async function sendPlot(address: string, key: string) {
   page.setViewport({ width: 1000, height: 1000, deviceScaleFactor: 2 });
   let svg = "";
 
+  const designUrl = `${DESIGN_URL}?product=${config.product.toLowerCase()}&seed=${rng()}`;
+  log(`Puppeteer navigating to: ${designUrl}`);
+  await page.goto(designUrl);
+  await wait(2000);
+  svg = await page.evaluate(() => window.extractSVG());
+
+  return svg;
+}
+
+async function sendPlot(address: string, key: string) {
+  // generate an svg
+  log("Generating SVG...");
+
+  let svg = "";
+  const startTS = Date.now();
   try {
-    await page.goto(`${DESIGN_URL}?product=${config.product.toLowerCase()}&seed=${rng()}`);
-    await wait(2000);
-    svg = await page.evaluate(() => window.extractSVG());
+    svg = await getSVG();
   } catch (err) {
-    log(`ERROR: Could not capture the SVG ${err}`);
+    log(`ERROR, Could not capture the SVG: ${err}`);
     process.exit(1);
   }
+
+  log(`Generated SVG in ${Date.now() - startTS}ms`);
 
   const filename = `./${PLOTTER_ID}_${config.product}_${config.ts}.svg`;
   fs.writeFileSync(filename, Buffer.from(svg));
