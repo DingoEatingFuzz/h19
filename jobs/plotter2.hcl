@@ -13,6 +13,10 @@ job "plotter2" {
       mode     = "fail"
     }
 
+    reschedule {
+      attempts = 0
+    }
+
     task "plot" {
       driver = "docker"
 
