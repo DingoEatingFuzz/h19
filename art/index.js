@@ -177,7 +177,6 @@ function gitTree(data, dimensions, len) {
     let prev = p;
     const line = new Segment(prev.x, prev.y, prev.z);
     const commits = walkTree(d, m, commit);
-    console.log(commits.length);
 
     for (let c of sample(50, commits)) {
       const coords = commitToCoords(c, prev);
@@ -255,10 +254,8 @@ function normalizeData(data) {
 }
 
 window.onload = () => {
-  console.log(document.readyState);
   const renderer = new SVGRenderer();
   renderer.setSize(450, 450);
-  console.log(`W: ${document.body.clientWidth}, H: ${document.body.clientHeight}`);
 
   document.body.appendChild(renderer.domElement);
 
