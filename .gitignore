@@ -10,6 +10,9 @@ services/webhooks/dist
 services/plot/node_modules
 services/plot/dist
 services/design/art
+services/preview/dist
+services/preview/.cache
+services/preview/node_modules
 
 art/node_modules
 art/dist
