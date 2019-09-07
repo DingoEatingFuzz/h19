@@ -18,6 +18,7 @@ import SeedRandom from "seedrandom";
 import Consul from "./consul";
 import Data from "./data";
 import Svg from "./svg";
+import Loop from "./loop";
 
 interface PlotConfig {
   ts: number;
@@ -73,6 +74,7 @@ export default class Preview {
   public plotter: string;
   public consul: Consul;
   public rerender: (renderer: WebGLRenderer, svg: SVGElement) => void;
+  private animation: Loop;
 
   constructor(
     plotter: string,
@@ -86,8 +88,11 @@ export default class Preview {
 
   public async start(): Promise<void> {
     for await (let config of this.watch()) {
-      console.log("NEW CONFIG", config);
-      const [renderer, svg] = await this.createScene(config);
+      if (this.animation) {
+        this.animation.stop();
+      }
+      const [renderer, svg, animation] = await this.createScene(config);
+      this.animation = animation;
       this.rerender(renderer, svg);
     }
   }
@@ -102,7 +107,7 @@ export default class Preview {
     }
   }
 
-  private async createScene(config: PlotConfig): Promise<[WebGLRenderer, SVGElement]> {
+  private async createScene(config: PlotConfig): Promise<[WebGLRenderer, SVGElement, Loop]> {
     const renderer = new WebGLRenderer({ antialias: true, alpha: true });
     const size = Math.min(window.innerHeight, window.innerWidth) * 0.9;
     renderer.setSize(size, size);
@@ -129,16 +134,28 @@ export default class Preview {
     scene.add(viz);
 
     renderer.render(scene, camera);
-    // Animate the thing
-    requestAnimationFrame(function rotate() {
-      viz.rotateOnAxis(axis, 0.03);
-      renderer.render(scene, camera);
-      requestAnimationFrame(rotate);
+    const animation = new Loop(async () => {
+      await wait(5000);
+      await new Promise((res) => {
+        let cumulativeAngle = 0;
+        let angle = (Math.PI * 2) / 120;
+        requestAnimationFrame(function rotate() {
+          viz.rotateOnAxis(axis, angle);
+          renderer.render(scene, camera);
+
+          cumulativeAngle += angle;
+          if (cumulativeAngle < Math.PI * 2) {
+            requestAnimationFrame(rotate);
+          } else {
+            res();
+          }
+        });
+      });
     });
 
     const svg = await Svg.get(config.product);
 
-    return [renderer, svg];
+    return [renderer, svg, animation];
   }
 }
 
