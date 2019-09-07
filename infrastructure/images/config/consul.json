@@ -10,5 +10,12 @@
   "service": {
     "name": "consul"
   },
-  "retry_join": ["RETRY_JOIN"]
+  "retry_join": [
+    "RETRY_JOIN"
+  ],
+  "http_config": {
+    "response_headers": {
+      "Access-Control-Allow-Origin": "*"
+    }
+  }
 }
