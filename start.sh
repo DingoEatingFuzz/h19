@@ -12,5 +12,6 @@ echo "Starting nomad jobs..."
 nomad run jobs/fabio.hcl
 nomad run jobs/webhooks.hcl
 nomad run jobs/design.hcl
+nomad run jobs/preview.hcl
 nomad run jobs/plotter1.hcl
 nomad run jobs/plotter2.hcl
