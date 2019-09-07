@@ -163,7 +163,8 @@ async function sendPlot(address: string, key: string) {
   //     }
   //   );
 
-  log("Updating Consul KV with new SVG address...");
+  log("Updating Consul KV with new SVG parameters...");
+  consul.kv.set(`axidraw_${PLOTTER_ID}_current`, JSON.stringify(config));
 
   log("Submitting SVG to the Plotter...");
   axios.post(`${address}/plot/${PLOTTER_ID}`, { key, svg }).then(
