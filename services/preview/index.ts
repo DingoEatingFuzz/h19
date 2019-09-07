@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import Preview from "./preview";
 
-// const CONSUL_HOST = "http://hashi.plot.technology:8500";
-const CONSUL_HOST = "http://localhost:8500";
+const CONSUL_HOST = "http://hashi.plot.technology:8500";
+// const CONSUL_HOST = "http://localhost:8500";
 
 window.onload = () => {
   const params = new URLSearchParams(location.search);
