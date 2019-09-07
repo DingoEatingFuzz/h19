@@ -1,16 +1,16 @@
-job "webhooks" {
+job "preview" {
   datacenters = ["dc1"]
 
   type = "service"
 
-  group "webhooks" {
+  group "preview" {
     count = 1
 
     constraint {
       distinct_hosts = true
     }
 
-    task "webhooks" {
+    task "preview" {
       driver = "docker"
 
       config {
@@ -30,7 +30,7 @@ job "webhooks" {
       }
 
       service {
-        name = "webhooks"
+        name = "preview"
         tags = ["urlprefix-/preview strip=/preview"]
         port = "site"
         check {
