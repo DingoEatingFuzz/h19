@@ -104,6 +104,7 @@ export class Axidraw {
         for (const motion of plan.motions) {
           await this.ebb.executeMotion(motion);
         }
+        log(`Plot finished, waiting for motors to be idle...`);
         await this.ebb.waitUntilMotorsIdle();
 
         const end = Date.now();

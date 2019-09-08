@@ -166,6 +166,11 @@ export default class PlotMachine {
           this.state = newState;
           return new PlotTransition(this.state);
         }
+
+        // Best attempt at resetting the plotter
+        this.axidraw.raisePen();
+        this.state = newState;
+        return new PlotTransition(this.state);
     }
 
     this.log(`Could not transition to state "${newState}" from state "${this.state}"`);

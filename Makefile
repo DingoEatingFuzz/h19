@@ -7,3 +7,6 @@ axidraw:
 
 ngrok:
 	ngrok http 8080
+
+reset:
+	curl -XPOST http://localhost:8080/reset/$$PLOTTER

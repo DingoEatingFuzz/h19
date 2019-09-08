@@ -129,6 +129,15 @@ app.post(
   })
 );
 
+app.post(
+  "/reset/:id",
+  fsmHandler((fsm, req, res) => {
+    log("FORCED: resetting plotter state to the RAISED position");
+    fsm.transition(PlotState.RAISED);
+    res.json({ success: true, status: 200, state: PlotState.RAISED, id: fsm.id });
+  })
+);
+
 app.get(
   "/queue/:id",
   fsmHandler((fsm, req, res) => {
