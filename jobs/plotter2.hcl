@@ -21,7 +21,7 @@ job "plotter2" {
       driver = "docker"
 
       config {
-        image = "dingoeatingfuzz/h19-plot:0.2.3"
+        image = "dingoeatingfuzz/h19-plot:0.3.0"
       }
 
       dispatch_payload {
