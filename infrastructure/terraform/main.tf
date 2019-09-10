@@ -17,9 +17,9 @@ module "hashistack" {
   region = "us-west1"
   zone = "us-west1-b"
   server_machine_type = "n1-standard-1"
-  client_machine_type = "g1-small"
+  client_machine_type = "n1-standard-2"
   server_count = 3
-  client_count = 12
+  client_count = 4
   nomad_binary = "https://releases.hashicorp.com/nomad/0.9.0/nomad_0.9.4_linux_amd64.zip"
   root_block_device_size = 16
   client_block_size = 50
