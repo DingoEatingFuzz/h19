@@ -14,7 +14,7 @@ job "preview" {
       driver = "docker"
 
       config {
-        image = "dingoeatingfuzz/h19-preview:0.1.0"
+        image = "dingoeatingfuzz/h19-preview:0.1.1"
         port_map {
           site = 8080
         }
