@@ -10,7 +10,16 @@ const PLOTTER_JOBS: { [s: string]: string } = {
   plot2: "plotter2"
 };
 
-const PRODUCT_ORDER = ["vagrant", "packer", "consul", "terraform", "vault", "nomad"];
+const PRODUCT_ORDER = [
+  "vagrant",
+  "packer",
+  "consul",
+  "terraform",
+  "terraform",
+  "terraform",
+  "vault",
+  "nomad"
+];
 
 function plotterJob(id: string): string {
   const jobName: string = PLOTTER_JOBS[id];

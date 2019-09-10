@@ -14,7 +14,7 @@ job "webhooks" {
       driver = "docker"
 
       config {
-        image = "dingoeatingfuzz/h19-webhooks:0.3.9"
+        image = "dingoeatingfuzz/h19-webhooks:0.3.11"
         port_map {
           api = 8081
         }
