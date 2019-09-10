@@ -1,3 +1,5 @@
+import { DateTime } from "luxon";
+
 export default class Data {
   public static cache: any = {};
   public static async get(product: string): Promise<any> {
@@ -17,6 +19,7 @@ export default class Data {
 
 function normalizeData(data: any) {
   data.all.forEach((commit: any) => {
-    commit.date = new Date(commit.date);
+    // 2018-10-24 12:21:37 -0700
+    commit.date = DateTime.fromFormat(commit.date, "yyyy-LL-dd HH:mm:ss ZZZ");
   });
 }
