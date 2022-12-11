@@ -15,7 +15,7 @@
   "license": "MIT",
   "dependencies": {
     "consul": "^0.35.0",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "flatten-svg": "github:DingoEatingFuzz/flatten-svg#c18f17a",
     "serialport": "^7.1.5",
     "svgdom": "0.0.20",
